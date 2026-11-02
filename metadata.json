@@ -1,0 +1,6 @@
+{
+  "name": "Team Performance & Meeting Review Dashboard",
+  "description": "داشبورد بسيطة لاجتماعات مراجعة أداء فريق الكواليتي، تتكون من عماويد بالطول جنب بعض مرتبة من الشمال لليمين: Quality، Duration، Total Tasks Screen، Overplanned Negotiation، Tickets Screen، وMeeting Report.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
