@@ -41,7 +41,7 @@ export const LoginScreen: React.FC = () => {
         <div className="bg-slate-900 p-6 text-center text-white relative">
           <div className="mx-auto w-16 h-16 bg-white rounded-xl p-1 shadow-md mb-3 flex items-center justify-center">
             <img
-              src="/logo.png"
+              src="./logo.png"
               alt="لوجو منصة الخطة"
               className="w-full h-full object-contain"
               onError={(e) => {

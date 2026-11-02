@@ -60,7 +60,7 @@ const DashboardContent: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl overflow-hidden border border-slate-200 bg-white shadow-2xs flex items-center justify-center shrink-0">
             <img
-              src="/logo.png"
+              src="./logo.png"
               alt="لوجو منصة الخطة"
               className="h-full w-full object-contain p-0.5"
               onError={(e) => {

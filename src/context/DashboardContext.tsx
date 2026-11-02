@@ -55,18 +55,31 @@ interface DashboardContextType {
   resetToDefaults: () => Promise<void>;
 }
 
-const STORAGE_KEY = 'quality_team_meeting_dashboard_v5';
-const USERS_STORAGE_KEY = 'quality_team_users_v2';
-const AUTH_SESSION_KEY = 'quality_team_auth_session_v1';
+const STORAGE_KEY = 'quality_team_meeting_dashboard_v6';
+const USERS_STORAGE_KEY = 'quality_team_users_v3';
+const AUTH_SESSION_KEY = 'quality_team_auth_session_v2';
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
 
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Users state
+  // Users state with defensive defaults
   const [users, setUsers] = useState<AppUser[]>(() => {
     try {
-      const saved = localStorage.getItem(USERS_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : INITIAL_USERS;
+      const saved = localStorage.getItem(USERS_STORAGE_KEY) || localStorage.getItem('quality_team_users_v2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((u: any, idx: number) => ({
+            id: u.id || `user-${idx}`,
+            username: u.username || (idx === 0 ? 'dawy' : idx === 1 ? 'radwa' : `user${idx + 1}`),
+            password: u.password || (idx === 0 ? 'password123' : idx === 1 ? 'radwa123' : 'password123'),
+            name: u.name || `User ${idx + 1}`,
+            role: u.role || 'Quality Engineer',
+            color: u.color || 'bg-indigo-600',
+          }));
+        }
+      }
+      return INITIAL_USERS;
     } catch {
       return INITIAL_USERS;
     }
@@ -75,11 +88,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Current logged in user
   const [currentUser, setCurrentUser] = useState<AppUser | null>(() => {
     try {
-      const saved = localStorage.getItem(AUTH_SESSION_KEY);
+      const saved = localStorage.getItem(AUTH_SESSION_KEY) || localStorage.getItem('quality_team_auth_session_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
-        const match = users.find((u) => u.id === parsed.id);
-        if (match) return match;
+        if (parsed && (parsed.id || parsed.username)) {
+          const match = users.find((u) => u.id === parsed.id || (u.username && u.username.toLowerCase() === (parsed.username || '').toLowerCase()));
+          if (match) return match;
+        }
       }
     } catch {
       // ignore
@@ -87,33 +102,62 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return null; // Require login screen by default
   });
 
-  // Members state
+  // Members state with migration safety
   const [members, setMembers] = useState<QualityMemberReview[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('quality_team_meeting_dashboard_v5');
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Ensure meeting structure exists if migrating from older version
-        return parsed.map((m: any) => {
-          if (!m.meetings || m.meetings.length === 0) {
-            const defaultMtg: MeetingSession = {
-              id: `mtg-${Date.now()}`,
-              title: 'Meeting 1',
-              createdAt: '2026-10-26',
-              duration: m.duration || { startDate: '2026-09-25', endDate: '2026-10-26' },
-              totalTasksScreen: m.totalTasksScreen || { screenshotUrl: null },
-              overplannedNegotiation: m.overplannedNegotiation || { discussionNotes: '', actions: [] },
-              ticketsScreen: m.ticketsScreen || { discussionNotes: '', actions: [] },
-              meetingReport: m.meetingReport || { fileUrl: null },
-            };
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((m: any, idx: number) => {
+            const hasMeetings = Array.isArray(m.meetings) && m.meetings.length > 0;
+            if (!hasMeetings) {
+              const defaultMtg: MeetingSession = {
+                id: `mtg-${Date.now()}-${idx}`,
+                title: 'Meeting 1',
+                createdAt: '2026-10-26',
+                duration: m.duration || { startDate: '2026-09-25', endDate: '2026-10-26', notes: '' },
+                totalTasksScreen: m.totalTasksScreen || { screenshotUrl: null },
+                overplannedNegotiation: m.overplannedNegotiation || { discussionNotes: '', actions: [] },
+                ticketsScreen: m.ticketsScreen || { discussionNotes: '', actions: [] },
+                meetingReport: m.meetingReport || { fileUrl: null },
+              };
+              return {
+                id: m.id || `m-${idx}`,
+                name: m.name || `Member ${idx + 1}`,
+                role: m.role || 'Quality Engineer',
+                meetings: [defaultMtg],
+                activeMeetingId: defaultMtg.id,
+                lastUpdatedBy: m.lastUpdatedBy || 'النظام',
+                lastUpdatedAt: m.lastUpdatedAt || 'الآن',
+              };
+            }
             return {
-              ...m,
-              meetings: [defaultMtg],
-              activeMeetingId: defaultMtg.id,
+              id: m.id || `m-${idx}`,
+              name: m.name || `Member ${idx + 1}`,
+              role: m.role || 'Quality Engineer',
+              meetings: m.meetings.map((mtg: any, mIdx: number) => ({
+                id: mtg.id || `mtg-${mIdx}`,
+                title: mtg.title || `Meeting ${mIdx + 1}`,
+                createdAt: mtg.createdAt || '2026-10-26',
+                duration: mtg.duration || { startDate: '2026-09-25', endDate: '2026-10-26', notes: '' },
+                totalTasksScreen: mtg.totalTasksScreen || { screenshotUrl: null },
+                overplannedNegotiation: {
+                  discussionNotes: mtg.overplannedNegotiation?.discussionNotes || '',
+                  actions: Array.isArray(mtg.overplannedNegotiation?.actions) ? mtg.overplannedNegotiation.actions : [],
+                },
+                ticketsScreen: {
+                  discussionNotes: mtg.ticketsScreen?.discussionNotes || '',
+                  actions: Array.isArray(mtg.ticketsScreen?.actions) ? mtg.ticketsScreen.actions : [],
+                },
+                meetingReport: mtg.meetingReport || { fileUrl: null },
+              })),
+              activeMeetingId: m.activeMeetingId || m.meetings[0]?.id || `mtg-${Date.now()}`,
+              lastUpdatedBy: m.lastUpdatedBy || 'النظام',
+              lastUpdatedAt: m.lastUpdatedAt || 'الآن',
             };
-          }
-          return m;
-        });
+          });
+        }
       }
       return INITIAL_MEMBERS;
     } catch {
@@ -131,20 +175,19 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const versionRef = useRef<number>(1);
   const isSavingRef = useRef<boolean>(false);
 
-  // Active member and active meeting
-  const activeMember = members.find((m) => m.id === activeMemberId) || members[0] || INITIAL_MEMBERS[0];
+  // Active member and active meeting (bulletproof against undefined)
+  const activeMember: QualityMemberReview =
+    members.find((m) => m.id === activeMemberId) || members[0] || INITIAL_MEMBERS[0];
+
+  const safeMeetings: MeetingSession[] =
+    Array.isArray(activeMember.meetings) && activeMember.meetings.length > 0
+      ? activeMember.meetings
+      : INITIAL_MEMBERS[0].meetings;
+
   const activeMeeting: MeetingSession =
-    activeMember.meetings.find((mtg) => mtg.id === activeMember.activeMeetingId) ||
-    activeMember.meetings[0] || {
-      id: `mtg-${Date.now()}`,
-      title: 'Meeting 1',
-      createdAt: new Date().toISOString().split('T')[0],
-      duration: { startDate: '2026-09-25', endDate: '2026-10-26' },
-      totalTasksScreen: { screenshotUrl: null },
-      overplannedNegotiation: { discussionNotes: '', actions: [] },
-      ticketsScreen: { discussionNotes: '', actions: [] },
-      meetingReport: { fileUrl: null },
-    };
+    safeMeetings.find((mtg) => mtg.id === activeMember.activeMeetingId) ||
+    safeMeetings[0] ||
+    INITIAL_MEMBERS[0].meetings[0];
 
   // Sync to local storage
   useEffect(() => {
@@ -163,42 +206,53 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Login handler
   const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    const trimmedUser = username.trim().toLowerCase();
-    const trimmedPass = password.trim();
+    const trimmedUser = (username || '').trim().toLowerCase();
+    const trimmedPass = (password || '').trim();
 
-    // 1. First check local users (ensures GitHub Pages / offline works instantly)
+    // 1. First check local users (ensures GitHub Pages / static hosting works instantly)
     const matched = users.find(
-      (u) => u.username.toLowerCase() === trimmedUser && u.password === trimmedPass
+      (u) => (u.username || '').toLowerCase() === trimmedUser && (u.password || '') === trimmedPass
     );
 
     if (matched) {
       setCurrentUser(matched);
-      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(matched));
+      try {
+        localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(matched));
+      } catch {
+        // ignore
+      }
       return { success: true };
     }
 
-    // 2. Try server API login
+    // 2. Try server API login (if running full-stack)
     try {
       const res = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: trimmedUser, password: trimmedPass }),
       });
-      const data = await res.json();
-      if (res.ok && data.success && data.user) {
-        setCurrentUser(data.user);
-        localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(data.user));
-        return { success: true };
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.user) {
+          setCurrentUser(data.user);
+          localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(data.user));
+          return { success: true };
+        }
       }
-      return { success: false, error: data.error || 'اسم المستخدم أو كلمة المرور غير صحيحة' };
     } catch {
-      return { success: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' };
+      // static fallback
     }
+
+    return { success: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' };
   };
 
   const logout = () => {
     setCurrentUser(null);
-    localStorage.removeItem(AUTH_SESSION_KEY);
+    try {
+      localStorage.removeItem(AUTH_SESSION_KEY);
+    } catch {
+      // ignore
+    }
   };
 
   // Fetch state from server
@@ -212,8 +266,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
           if (remoteData.version > versionRef.current && !isSavingRef.current) {
             versionRef.current = remoteData.version;
-            setMembers(remoteData.members);
-            if (remoteData.users && remoteData.users.length > 0) {
+            if (Array.isArray(remoteData.members) && remoteData.members.length > 0) {
+              setMembers(remoteData.members);
+            }
+            if (Array.isArray(remoteData.users) && remoteData.users.length > 0) {
               setUsers(remoteData.users);
             }
             if (remoteData.activeMemberId) {
@@ -269,19 +325,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     refreshFromServer();
   }, []);
 
-  // Polling every 3 seconds to sync without interrupting typing
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const activeEl = document.activeElement;
-      const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
-      if (!isTyping) {
-        refreshFromServer();
-      }
-    }, 3000);
-
-    return () => clearInterval(timer);
-  }, [activeMemberId]);
-
   // Update current member's ACTIVE MEETING
   const updateCurrentMeeting = (updater: (prevMeeting: MeetingSession) => MeetingSession) => {
     const nowFormatted = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
@@ -290,7 +333,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const updatedMembers = members.map((m) => {
       if (m.id !== activeMember.id) return m;
 
-      const updatedMeetings = m.meetings.map((mtg) => {
+      const currentMeetings = Array.isArray(m.meetings) && m.meetings.length > 0 ? m.meetings : [activeMeeting];
+      const updatedMeetings = currentMeetings.map((mtg) => {
         if (mtg.id !== activeMeeting.id) return mtg;
         return updater(mtg);
       });
@@ -367,7 +411,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const addMeeting = (title?: string) => {
     const authorName = currentUser ? currentUser.name : 'مستخدم الداشبورد';
     const newMtgId = `mtg-${Date.now()}`;
-    const nextNumber = activeMember.meetings.length + 1;
+    const nextNumber = safeMeetings.length + 1;
 
     const newMeeting: MeetingSession = {
       id: newMtgId,
@@ -387,9 +431,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     const updated = members.map((m) => {
       if (m.id !== activeMember.id) return m;
+      const currentMtgs = Array.isArray(m.meetings) ? m.meetings : [];
       return {
         ...m,
-        meetings: [...m.meetings, newMeeting],
+        meetings: [...currentMtgs, newMeeting],
         activeMeetingId: newMtgId,
         lastUpdatedBy: authorName,
         lastUpdatedAt: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
@@ -401,7 +446,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const deleteMeeting = (meetingId: string) => {
-    if (activeMember.meetings.length <= 1) {
+    if (safeMeetings.length <= 1) {
       alert('يجب أن يتبقى ميتينج واحد على الأقل لهذا العضو.');
       return;
     }
@@ -496,7 +541,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       duration: {
         startDate,
         endDate,
-        notes: notes !== undefined ? notes : prev.duration.notes,
+        notes: notes !== undefined ? notes : prev.duration?.notes || '',
       },
     }));
   };
@@ -518,8 +563,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     updateCurrentMeeting((prev) => ({
       ...prev,
       overplannedNegotiation: {
-        ...prev.overplannedNegotiation,
         discussionNotes: notes,
+        actions: prev.overplannedNegotiation?.actions || [],
       },
     }));
   };
@@ -538,8 +583,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     updateCurrentMeeting((prev) => ({
       ...prev,
       overplannedNegotiation: {
-        ...prev.overplannedNegotiation,
-        actions: [...prev.overplannedNegotiation.actions, newAction],
+        discussionNotes: prev.overplannedNegotiation?.discussionNotes || '',
+        actions: [...(prev.overplannedNegotiation?.actions || []), newAction],
       },
     }));
   };
@@ -548,8 +593,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     updateCurrentMeeting((prev) => ({
       ...prev,
       overplannedNegotiation: {
-        ...prev.overplannedNegotiation,
-        actions: prev.overplannedNegotiation.actions.map((a) => (a.id === actionId ? { ...a, done: !a.done } : a)),
+        discussionNotes: prev.overplannedNegotiation?.discussionNotes || '',
+        actions: (prev.overplannedNegotiation?.actions || []).map((a) => (a.id === actionId ? { ...a, done: !a.done } : a)),
       },
     }));
   };
@@ -558,8 +603,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     updateCurrentMeeting((prev) => ({
       ...prev,
       overplannedNegotiation: {
-        ...prev.overplannedNegotiation,
-        actions: prev.overplannedNegotiation.actions.filter((a) => a.id !== actionId),
+        discussionNotes: prev.overplannedNegotiation?.discussionNotes || '',
+        actions: (prev.overplannedNegotiation?.actions || []).filter((a) => a.id !== actionId),
       },
     }));
   };
@@ -569,8 +614,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     updateCurrentMeeting((prev) => ({
       ...prev,
       ticketsScreen: {
-        ...prev.ticketsScreen,
         discussionNotes: notes,
+        actions: prev.ticketsScreen?.actions || [],
       },
     }));
   };
@@ -589,8 +634,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     updateCurrentMeeting((prev) => ({
       ...prev,
       ticketsScreen: {
-        ...prev.ticketsScreen,
-        actions: [...prev.ticketsScreen.actions, newAction],
+        discussionNotes: prev.ticketsScreen?.discussionNotes || '',
+        actions: [...(prev.ticketsScreen?.actions || []), newAction],
       },
     }));
   };
@@ -599,8 +644,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     updateCurrentMeeting((prev) => ({
       ...prev,
       ticketsScreen: {
-        ...prev.ticketsScreen,
-        actions: prev.ticketsScreen.actions.map((a) => (a.id === actionId ? { ...a, done: !a.done } : a)),
+        discussionNotes: prev.ticketsScreen?.discussionNotes || '',
+        actions: (prev.ticketsScreen?.actions || []).map((a) => (a.id === actionId ? { ...a, done: !a.done } : a)),
       },
     }));
   };
@@ -609,8 +654,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     updateCurrentMeeting((prev) => ({
       ...prev,
       ticketsScreen: {
-        ...prev.ticketsScreen,
-        actions: prev.ticketsScreen.actions.filter((a) => a.id !== actionId),
+        discussionNotes: prev.ticketsScreen?.discussionNotes || '',
+        actions: (prev.ticketsScreen?.actions || []).filter((a) => a.id !== actionId),
       },
     }));
   };
@@ -653,7 +698,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setActiveMemberId(INITIAL_MEMBERS[0].id);
       setUsers(INITIAL_USERS);
     }
-    localStorage.removeItem(STORAGE_KEY);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(USERS_STORAGE_KEY);
+      localStorage.removeItem(AUTH_SESSION_KEY);
+    } catch {
+      // ignore
+    }
   };
 
   return (
