@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { QualityMemberReview, ActionItem, AppUser, DashboardSyncData, MeetingSession } from '../types/dashboard';
+import { QualityMemberReview, ActionItem, AppUser, DashboardSyncData, MeetingSession, SeniorityTier } from '../types/dashboard';
 import { INITIAL_MEMBERS, INITIAL_USERS } from '../data/initialData';
 
 interface DashboardContextType {
@@ -19,7 +19,8 @@ interface DashboardContextType {
   activeMeeting: MeetingSession;
   setActiveMemberId: (id: string) => void;
   setActiveMeetingId: (meetingId: string) => void;
-  addMember: (name: string, role?: string) => void;
+  addMember: (name: string, role?: string, seniority?: SeniorityTier) => void;
+  updateMemberSeniority: (id: string, seniority: SeniorityTier) => void;
   deleteMember: (id: string) => void;
   addMeeting: (title?: string) => void;
   deleteMeeting: (meetingId: string) => void;
@@ -51,6 +52,7 @@ interface DashboardContextType {
   // Column 6: Meeting Report
   updateMeetingReportFile: (fileUrl: string | null, fileName?: string, fileSize?: string) => void;
   updateMeetingReportNotes: (notes: string) => void;
+  updateMeetingReportRecipient: (recipient: string) => void;
 
   resetToDefaults: () => Promise<void>;
 }
@@ -110,6 +112,15 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed.map((m: any, idx: number) => {
+            const roleStr = (m.role || '').toLowerCase();
+            const inferredSeniority: SeniorityTier =
+              m.seniority ||
+              (roleStr.includes('lead') || roleStr.includes('senior')
+                ? 'Senior'
+                : roleStr.includes('junior')
+                ? 'Junior'
+                : 'Middle');
+
             const hasMeetings = Array.isArray(m.meetings) && m.meetings.length > 0;
             if (!hasMeetings) {
               const defaultMtg: MeetingSession = {
@@ -120,12 +131,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 totalTasksScreen: m.totalTasksScreen || { screenshotUrl: null },
                 overplannedNegotiation: m.overplannedNegotiation || { discussionNotes: '', actions: [] },
                 ticketsScreen: m.ticketsScreen || { discussionNotes: '', actions: [] },
-                meetingReport: m.meetingReport || { fileUrl: null },
+                meetingReport: m.meetingReport ? { reportRecipient: 'أحمد', ...m.meetingReport } : { fileUrl: null, reportRecipient: 'أحمد' },
               };
               return {
                 id: m.id || `m-${idx}`,
                 name: m.name || `Member ${idx + 1}`,
                 role: m.role || 'Quality Engineer',
+                seniority: inferredSeniority,
                 meetings: [defaultMtg],
                 activeMeetingId: defaultMtg.id,
                 lastUpdatedBy: m.lastUpdatedBy || 'النظام',
@@ -136,6 +148,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               id: m.id || `m-${idx}`,
               name: m.name || `Member ${idx + 1}`,
               role: m.role || 'Quality Engineer',
+              seniority: inferredSeniority,
               meetings: m.meetings.map((mtg: any, mIdx: number) => ({
                 id: mtg.id || `mtg-${mIdx}`,
                 title: mtg.title || `Meeting ${mIdx + 1}`,
@@ -150,7 +163,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                   discussionNotes: mtg.ticketsScreen?.discussionNotes || '',
                   actions: Array.isArray(mtg.ticketsScreen?.actions) ? mtg.ticketsScreen.actions : [],
                 },
-                meetingReport: mtg.meetingReport || { fileUrl: null },
+                meetingReport: {
+                  fileUrl: mtg.meetingReport?.fileUrl || null,
+                  fileName: mtg.meetingReport?.fileName,
+                  fileSize: mtg.meetingReport?.fileSize,
+                  uploadedAt: mtg.meetingReport?.uploadedAt,
+                  notes: mtg.meetingReport?.notes || '',
+                  reportRecipient: mtg.meetingReport?.reportRecipient || 'أحمد',
+                },
               })),
               activeMeetingId: m.activeMeetingId || m.meetings[0]?.id || `mtg-${Date.now()}`,
               lastUpdatedBy: m.lastUpdatedBy || 'النظام',
@@ -352,7 +372,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   // Member Management
-  const addMember = (name: string, role = 'Quality Engineer') => {
+  const addMember = (name: string, role = 'Quality Engineer', seniority: SeniorityTier = 'Middle') => {
     if (!name.trim()) return;
     const authorName = currentUser ? currentUser.name : 'مستخدم الداشبورد';
     const initialMtgId = `mtg-${Date.now()}`;
@@ -370,13 +390,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       totalTasksScreen: { screenshotUrl: null },
       overplannedNegotiation: { discussionNotes: '', actions: [] },
       ticketsScreen: { discussionNotes: '', actions: [] },
-      meetingReport: { fileUrl: null },
+      meetingReport: { fileUrl: null, reportRecipient: 'أحمد', notes: 'تم الاتفاق على كافة الـ Actions وتم رفع التقرير لمتابعة التنفيذ.' },
     };
 
     const newMember: QualityMemberReview = {
       id: `m-${Date.now()}`,
       name: name.trim(),
       role: role.trim() || 'Quality Engineer',
+      seniority,
       meetings: [defaultMeeting],
       activeMeetingId: initialMtgId,
       lastUpdatedBy: authorName,
@@ -387,6 +408,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setMembers(updated);
     setActiveMemberId(newMember.id);
     pushToServer(updated, newMember.id);
+  };
+
+  const updateMemberSeniority = (id: string, seniority: SeniorityTier) => {
+    const updated = members.map((m) => (m.id === id ? { ...m, seniority } : m));
+    setMembers(updated);
+    pushToServer(updated);
   };
 
   const deleteMember = (id: string) => {
@@ -684,6 +711,16 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }));
   };
 
+  const updateMeetingReportRecipient = (recipient: string) => {
+    updateCurrentMeeting((prev) => ({
+      ...prev,
+      meetingReport: {
+        ...prev.meetingReport,
+        reportRecipient: recipient,
+      },
+    }));
+  };
+
   const resetToDefaults = async () => {
     try {
       const res = await fetch('/api/reset', { method: 'POST' });
@@ -724,6 +761,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setActiveMemberId,
         setActiveMeetingId,
         addMember,
+        updateMemberSeniority,
         deleteMember,
         addMeeting,
         deleteMeeting,
@@ -743,6 +781,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         deleteTicketsAction,
         updateMeetingReportFile,
         updateMeetingReportNotes,
+        updateMeetingReportRecipient,
         resetToDefaults,
       }}
     >

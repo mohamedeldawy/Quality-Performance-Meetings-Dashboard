@@ -15,8 +15,7 @@ import {
   RotateCcw,
   ZoomIn,
   ZoomOut,
-  Maximize2,
-  Calendar,
+  Sparkles,
 } from 'lucide-react';
 
 const DashboardContent: React.FC = () => {
@@ -36,26 +35,15 @@ const DashboardContent: React.FC = () => {
   const [showUsersModal, setShowUsersModal] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(85); // Default comfortable scale 85% so all 6 columns fit gracefully!
 
-  // If user is not authenticated, show the LoginScreen
+  // If user is not authenticated, show the clean LoginScreen
   if (!currentUser) {
     return <LoginScreen />;
   }
 
-  const zoomScaleClass =
-    zoomLevel === 75
-      ? 'scale-75 origin-top-left'
-      : zoomLevel === 80
-      ? 'scale-80 origin-top-left'
-      : zoomLevel === 85
-      ? 'scale-85 origin-top-left'
-      : zoomLevel === 90
-      ? 'scale-90 origin-top-left'
-      : 'scale-100 origin-top-left';
-
   return (
-    <div className="min-h-screen flex flex-col bg-slate-100 text-slate-900 font-sans selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-slate-100/90 text-slate-900 font-sans selection:bg-indigo-500 selection:text-white">
       {/* Top Header Bar */}
-      <header className="bg-white border-b border-slate-200 px-4 py-2 flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-2xs z-30">
+      <header className="bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-xs z-30">
         {/* Left: Elkheta Platform Logo & Dashboard Title */}
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-xl overflow-hidden border border-slate-200 bg-white shadow-2xs flex items-center justify-center shrink-0">
@@ -73,36 +61,44 @@ const DashboardContent: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">
-                منصة الخطة التعليمية
+              {/* Requested exact title */}
+              <h1 className="font-black text-sm sm:text-base text-slate-900 tracking-tight flex items-center gap-2">
+                <span>الخطة Quality Performance Meetings Dashboard</span>
+                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
+                  <Sparkles className="w-2.5 h-2.5" />
+                  <span>v2.0 Active</span>
+                </span>
+              </h1>
+            </div>
+            <p className="text-[11px] text-slate-500 flex items-center gap-1.5" dir="rtl">
+              <span>مراجعة أداء فريق الـ Quality</span>
+              <span className="text-slate-300">·</span>
+              <strong className="text-slate-800">{activeMember.name}</strong>
+              <span className="px-1.5 py-0.2 bg-indigo-100 text-indigo-800 rounded text-[9px] font-bold font-mono">
+                {activeMember.seniority || 'Quality'}
               </span>
               <span className="text-slate-300">·</span>
-              <span className="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded">
-                Quality Review Dashboard
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500" dir="rtl">
-              مراجعة أداء فريق الكواليتي · {activeMember.name} ({activeMeeting.title})
+              <span className="text-indigo-600 font-semibold">{activeMeeting.title}</span>
             </p>
           </div>
         </div>
 
         {/* Center: Live Sync & Scale Adjuster */}
         <div className="flex items-center gap-3">
-          {/* Zoom / Scaling Control to comfortably fit all columns without zooming out browser */}
-          <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 p-1 rounded-lg text-xs">
+          {/* Zoom / Scaling Control to comfortably fit all 6 columns */}
+          <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 p-1 rounded-lg text-xs shadow-2xs">
             <span className="text-[11px] text-slate-500 font-medium px-1.5" dir="rtl">
               حجم العرض:
             </span>
             <button
               type="button"
-              onClick={() => setZoomLevel(Math.max(75, zoomLevel - 5))}
+              onClick={() => setZoomLevel(Math.max(70, zoomLevel - 5))}
               className="p-1 hover:bg-slate-200 rounded text-slate-600 transition-colors"
               title="تصغير العرض"
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
-            <span className="text-[11px] font-mono font-bold text-slate-700 px-1">
+            <span className="text-[11px] font-mono font-bold text-slate-800 px-1">
               {zoomLevel}%
             </span>
             <button
@@ -116,7 +112,7 @@ const DashboardContent: React.FC = () => {
             <button
               type="button"
               onClick={() => setZoomLevel(zoomLevel === 100 ? 85 : 100)}
-              className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-medium text-slate-700 hover:bg-slate-100"
+              className="px-2 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-bold text-slate-700 hover:bg-slate-100 shadow-2xs"
               title="تبديل ملاءمة الشاشة"
             >
               {zoomLevel === 100 ? 'ملاءمة الشاشة' : '100%'}
@@ -125,7 +121,7 @@ const DashboardContent: React.FC = () => {
 
           {/* Sync Status Badge */}
           <div
-            className="hidden md:flex items-center gap-2 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg text-[11px] text-slate-600"
+            className="hidden md:flex items-center gap-2 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg text-[11px] text-slate-600 shadow-2xs"
             dir="rtl"
           >
             <span className="flex items-center gap-1 font-semibold">
@@ -173,7 +169,7 @@ const DashboardContent: React.FC = () => {
           </button>
 
           {/* Current User Info */}
-          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
+          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg shadow-2xs">
             <div className={`w-6 h-6 rounded-full ${currentUser.color || 'bg-indigo-600'} text-white flex items-center justify-center font-bold text-[10px]`}>
               {currentUser.name.slice(0, 2)}
             </div>
@@ -191,7 +187,7 @@ const DashboardContent: React.FC = () => {
           <button
             type="button"
             onClick={logout}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg font-medium transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg font-bold transition-colors shadow-2xs"
             title="تسجيل الخروج من الداشبورد"
           >
             <LogOut className="w-3.5 h-3.5 rotate-180" />
@@ -219,35 +215,35 @@ const DashboardContent: React.FC = () => {
         <div
           dir="ltr"
           style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top left', width: `${100 / (zoomLevel / 100)}%` }}
-          className="flex flex-row items-stretch gap-3 h-[calc((100vh-68px)/var(--zoom-factor,1))]"
+          className="flex flex-row items-stretch gap-3 h-[calc((100vh-74px)/var(--zoom-factor,1))]"
         >
-          {/* Column 1: Quality */}
-          <div className="w-[280px] shrink-0 h-full">
+          {/* Column 1: Quality (Indigo theme) */}
+          <div className="w-[300px] shrink-0 h-full">
             <Column1Quality />
           </div>
 
-          {/* Column 2: Duration */}
-          <div className="w-[290px] shrink-0 h-full">
+          {/* Column 2: Duration (Sky theme) */}
+          <div className="w-[285px] shrink-0 h-full">
             <Column2Duration />
           </div>
 
-          {/* Column 3: Total Tasks Screen */}
-          <div className="w-[320px] shrink-0 h-full">
+          {/* Column 3: Total Tasks Screen (Amber theme) */}
+          <div className="w-[325px] shrink-0 h-full">
             <Column3TotalTasks />
           </div>
 
-          {/* Column 4: Overplanned Negotiation */}
+          {/* Column 4: Overplanned Negotiation (Rose theme) */}
           <div className="w-[340px] shrink-0 h-full">
             <Column4Overplanned />
           </div>
 
-          {/* Column 5: Tickets Screen */}
+          {/* Column 5: Tickets Screen (Emerald theme) */}
           <div className="w-[340px] shrink-0 h-full">
             <Column5Tickets />
           </div>
 
-          {/* Column 6: Meeting Report */}
-          <div className="w-[330px] shrink-0 h-full">
+          {/* Column 6: Meeting Report (Purple theme) */}
+          <div className="w-[335px] shrink-0 h-full">
             <Column6MeetingReport />
           </div>
         </div>

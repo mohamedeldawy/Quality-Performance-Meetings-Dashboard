@@ -54,6 +54,11 @@ if (fs.existsSync(DB_FILE)) {
       username: u.username || u.name.split(' ')[0].toLowerCase(),
       password: u.password || 'password123',
     }));
+    // Ensure members have seniority if migrating from older schema
+    serverState.members = (serverState.members || []).map((m: any) => ({
+      ...m,
+      seniority: m.seniority || (m.role?.toLowerCase().includes('lead') || m.role?.toLowerCase().includes('senior') ? 'Senior' : m.role?.toLowerCase().includes('junior') ? 'Junior' : 'Middle'),
+    }));
     console.log('[Server] Loaded persistent database from disk.');
   } catch (err) {
     console.error('[Server] Failed to parse database file, using defaults.', err);

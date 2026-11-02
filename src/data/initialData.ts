@@ -66,7 +66,8 @@ const sampleMeeting1: MeetingSession = {
   },
   meetingReport: {
     fileUrl: null,
-    notes: 'تم الاتفاق على كافة الأكشنات ورفع التقرير لإرساله لأحمد لمتابعة التنفيذ.',
+    reportRecipient: 'أحمد',
+    notes: 'تم الاتفاق على كافة الـ Actions وتم رفع التقرير لمتابعة التنفيذ.',
   },
 };
 
@@ -94,6 +95,8 @@ const sampleMeeting2: MeetingSession = {
   },
   meetingReport: {
     fileUrl: null,
+    reportRecipient: 'أحمد',
+    notes: 'تم الاتفاق على كافة الـ Actions وتم رفع التقرير لمتابعة التنفيذ.',
   },
 };
 
@@ -102,15 +105,37 @@ export const INITIAL_MEMBERS: QualityMemberReview[] = [
     id: 'm1',
     name: 'أحمد حسن',
     role: 'Quality Assurance Lead',
+    seniority: 'Senior',
     lastUpdatedBy: 'مدير الكواليتي (أحمد ضوي)',
     lastUpdatedAt: 'اليوم، 02:15 م',
     meetings: [sampleMeeting1, sampleMeeting2],
     activeMeetingId: 'mtg-1',
   },
   {
+    id: 'm-sr-2',
+    name: 'محمود عادل',
+    role: 'Senior Automation QA',
+    seniority: 'Senior',
+    lastUpdatedBy: 'أ/ رضوى',
+    lastUpdatedAt: 'أمس',
+    meetings: [
+      {
+        ...sampleMeeting1,
+        id: 'mtg-mahmoud-1',
+        title: 'Meeting 1 (سبرنت البنية التحتية)',
+        overplannedNegotiation: {
+          discussionNotes: 'مناقشة تغطية الـ E2E Tests وسيرفرات الـ CI/CD.',
+          actions: [],
+        },
+      },
+    ],
+    activeMeetingId: 'mtg-mahmoud-1',
+  },
+  {
     id: 'm2',
     name: 'سارة محمود',
     role: 'Frontend QA Specialist',
+    seniority: 'Middle',
     lastUpdatedBy: 'أ/ رضوى',
     lastUpdatedAt: 'اليوم، 01:40 م',
     meetings: [
@@ -135,9 +160,30 @@ export const INITIAL_MEMBERS: QualityMemberReview[] = [
     activeMeetingId: 'mtg-sara-1',
   },
   {
+    id: 'm-mid-2',
+    name: 'ياسمين سمير',
+    role: 'Middle Functional QA',
+    seniority: 'Middle',
+    lastUpdatedBy: 'مدير الكواليتي (أحمد ضوي)',
+    lastUpdatedAt: 'منذ يومين',
+    meetings: [
+      {
+        ...sampleMeeting1,
+        id: 'mtg-yasmin-1',
+        title: 'Meeting 1 (اختبارات الامتحانات)',
+        overplannedNegotiation: {
+          discussionNotes: 'مراجعة بنك الأسئلة واختبارات التصحيح الآلي.',
+          actions: [],
+        },
+      },
+    ],
+    activeMeetingId: 'mtg-yasmin-1',
+  },
+  {
     id: 'm3',
     name: 'عمر خالد',
-    role: 'Backend & Systems QA',
+    role: 'Junior Quality Engineer',
+    seniority: 'Junior',
     lastUpdatedBy: 'مدير الكواليتي (أحمد ضوي)',
     lastUpdatedAt: 'أمس',
     meetings: [
@@ -152,5 +198,25 @@ export const INITIAL_MEMBERS: QualityMemberReview[] = [
       },
     ],
     activeMeetingId: 'mtg-omar-1',
+  },
+  {
+    id: 'm-jr-2',
+    name: 'كريم علي',
+    role: 'Junior QA Tester',
+    seniority: 'Junior',
+    lastUpdatedBy: 'أ/ رضوى',
+    lastUpdatedAt: 'اليوم، 11:30 ص',
+    meetings: [
+      {
+        ...sampleMeeting1,
+        id: 'mtg-karim-1',
+        title: 'Meeting 1 (فحص الشاشات والتسجيل)',
+        overplannedNegotiation: {
+          discussionNotes: 'مراجعة تدفق تسجيل الطلاب الجدد واستعادة كلمة المرور.',
+          actions: [],
+        },
+      },
+    ],
+    activeMeetingId: 'mtg-karim-1',
   },
 ];

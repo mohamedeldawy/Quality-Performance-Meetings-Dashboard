@@ -55,13 +55,17 @@ export interface MeetingSession {
     fileSize?: string;
     uploadedAt?: string;
     notes?: string;
+    reportRecipient?: string; // e.g. "أحمد" or "محمد"
   };
 }
+
+export type SeniorityTier = 'Junior' | 'Middle' | 'Senior';
 
 export interface QualityMemberReview {
   id: string;
   name: string;
   role: string;
+  seniority: SeniorityTier; // 'Junior' | 'Middle' | 'Senior'
   meetings: MeetingSession[];
   activeMeetingId: string;
   lastUpdatedBy?: string;
