@@ -1,19 +1,101 @@
-import { QualityMemberReview, AppUser } from '../types/dashboard';
+import { QualityMemberReview, AppUser, MeetingSession } from '../types/dashboard';
 
 export const INITIAL_USERS: AppUser[] = [
   {
     id: 'user-manager',
+    username: 'dawy',
+    password: 'password123',
     name: 'مدير الكواليتي (أحمد ضوي)',
     role: 'Quality Manager',
     color: 'bg-indigo-600',
   },
   {
     id: 'user-radwa',
+    username: 'radwa',
+    password: 'radwa123',
     name: 'أ/ رضوى',
     role: 'Senior Quality',
     color: 'bg-emerald-600',
   },
 ];
+
+const sampleMeeting1: MeetingSession = {
+  id: 'mtg-1',
+  title: 'Meeting 1 (سبتمبر - أكتوبر)',
+  createdAt: '2026-10-26',
+  createdBy: 'مدير الكواليتي (أحمد ضوي)',
+  duration: {
+    startDate: '2026-09-25',
+    endDate: '2026-10-26',
+    notes: 'دورة تقييم أداء شهر أكتوبر (سبرنت 44)',
+  },
+  totalTasksScreen: {
+    screenshotUrl: null,
+  },
+  overplannedNegotiation: {
+    discussionNotes: 'اتناقشنا في سبب زيادة الساعات على مهام فحص بوابات الدفع الإلكتروني، وكان السبب غموض متطلبات سيناريوهات الفشل في الـ Webhook وتغيير بروتوكول التشفير من جانب البنك دون إشعار مسبق.',
+    actions: [
+      {
+        id: 'act-op-1',
+        text: 'اعتماد قائمة سيناريوهات الفحص المسبقة مع فريق التطوير قبل بدء السبرنت',
+        done: false,
+        dueDate: '2026-11-05',
+        createdBy: 'مدير الكواليتي (أحمد ضوي)',
+      },
+      {
+        id: 'act-op-2',
+        text: 'تجميد إضافة أي بوابات دفع إضافية حتى استقرار التغطية الحالية',
+        done: true,
+        dueDate: '2026-11-02',
+        createdBy: 'أ/ رضوى',
+      },
+    ],
+  },
+  ticketsScreen: {
+    discussionNotes: 'راجعنا البلاغات المفتوحة وكان أهمها تذكرة انقطاع إشعار الدفع وبلاغ اختفاء زر إرسال الاختبار في شاشات الموبايل الصغيرة، واتفقنا على أولوية حلها.',
+    actions: [
+      {
+        id: 'act-tk-1',
+        text: 'إضافة فحص أوتوماتيكي للشاشات الصغيرة (iPhone SE / Android) في بيئة الـ Staging',
+        done: false,
+        dueDate: '2026-11-04',
+        createdBy: 'أ/ رضوى',
+      },
+    ],
+    screenshotUrl: null,
+  },
+  meetingReport: {
+    fileUrl: null,
+    notes: 'تم الاتفاق على كافة الأكشنات ورفع التقرير لإرساله لأحمد لمتابعة التنفيذ.',
+  },
+};
+
+const sampleMeeting2: MeetingSession = {
+  id: 'mtg-2',
+  title: 'Meeting 2 (أكتوبر - نوفمبر)',
+  createdAt: '2026-11-02',
+  createdBy: 'أ/ رضوى',
+  duration: {
+    startDate: '2026-10-27',
+    endDate: '2026-11-26',
+    notes: 'متابعة الدورة الثانية بعد تطبيق خطة التحسين',
+  },
+  totalTasksScreen: {
+    screenshotUrl: null,
+  },
+  overplannedNegotiation: {
+    discussionNotes: 'مراجعة نسب الالتزام الزمني بعد تطبيق اختبارات الـ Webhooks.',
+    actions: [],
+  },
+  ticketsScreen: {
+    discussionNotes: 'فحص التذاكر الجديدة الخاصة بتطبيق الموبايل.',
+    actions: [],
+    screenshotUrl: null,
+  },
+  meetingReport: {
+    fileUrl: null,
+  },
+};
 
 export const INITIAL_MEMBERS: QualityMemberReview[] = [
   {
@@ -22,55 +104,8 @@ export const INITIAL_MEMBERS: QualityMemberReview[] = [
     role: 'Quality Assurance Lead',
     lastUpdatedBy: 'مدير الكواليتي (أحمد ضوي)',
     lastUpdatedAt: 'اليوم، 02:15 م',
-    duration: {
-      startDate: '2026-09-25',
-      endDate: '2026-10-26',
-      notes: 'دورة تقييم أداء شهر أكتوبر (سبرنت 44)',
-    },
-    totalTasksScreen: {
-      screenshotUrl: null,
-      fileName: undefined,
-      uploadedAt: undefined,
-    },
-    overplannedNegotiation: {
-      discussionNotes: 'اتناقشنا في سبب زيادة الساعات على مهام فحص بوابات الدفع الإلكتروني، وكان السبب غموض متطلبات سيناريوهات الفشل في الـ Webhook وتغيير بروتوكول التشفير من جانب البنك دون إشعار مسبق.',
-      actions: [
-        {
-          id: 'act-op-1',
-          text: 'اعتماد قائمة سيناريوهات الفحص المسبقة مع فريق التطوير قبل بدء السبرنت',
-          done: false,
-          dueDate: '2026-11-05',
-          createdBy: 'مدير الكواليتي (أحمد ضوي)',
-        },
-        {
-          id: 'act-op-2',
-          text: 'تجميد إضافة أي بوابات دفع إضافية حتى استقرار التغطية الحالية',
-          done: true,
-          dueDate: '2026-11-02',
-          createdBy: 'أ/ رضوى',
-        },
-      ],
-    },
-    ticketsScreen: {
-      discussionNotes: 'راجعنا البلاغات المفتوحة وكان أهمها تذكرة انقطاع إشعار الدفع وبلاغ اختفاء زر إرسال الاختبار في شاشات الموبايل الصغيرة، واتفقنا على أولوية حلها.',
-      actions: [
-        {
-          id: 'act-tk-1',
-          text: 'إضافة فحص أوتوماتيكي للشاشات الصغيرة (iPhone SE / Android) في بيئة الـ Staging',
-          done: false,
-          dueDate: '2026-11-04',
-          createdBy: 'أ/ رضوى',
-        },
-      ],
-      screenshotUrl: null,
-    },
-    meetingReport: {
-      fileUrl: null,
-      fileName: undefined,
-      fileSize: undefined,
-      uploadedAt: undefined,
-      notes: 'تم الاتفاق على كافة الأكشنات ورفع التقرير لإرساله لأحمد لمتابعة التنفيذ.',
-    },
+    meetings: [sampleMeeting1, sampleMeeting2],
+    activeMeetingId: 'mtg-1',
   },
   {
     id: 'm2',
@@ -78,42 +113,26 @@ export const INITIAL_MEMBERS: QualityMemberReview[] = [
     role: 'Frontend QA Specialist',
     lastUpdatedBy: 'أ/ رضوى',
     lastUpdatedAt: 'اليوم، 01:40 م',
-    duration: {
-      startDate: '2026-09-25',
-      endDate: '2026-10-26',
-      notes: 'مراجعة أداء واجهات المستخدم وتوافقية المتصفحات',
-    },
-    totalTasksScreen: {
-      screenshotUrl: null,
-    },
-    overplannedNegotiation: {
-      discussionNotes: 'تمت مناقشة إعادة تصميم جدول الحصص وفروق التوقيت للطلاب بالخارج، وتم استهلاك 12 ساعة زيادة لتغطية حالات الـ Edge Cases.',
-      actions: [
-        {
-          id: 'act-op-3',
-          text: 'إلزام فريق التصميم بتقديم الحالات الشاذة قبل بدء الاختبار',
-          done: false,
-          dueDate: '2026-11-06',
-          createdBy: 'أ/ رضوى',
+    meetings: [
+      {
+        ...sampleMeeting1,
+        id: 'mtg-sara-1',
+        title: 'Meeting 1 (مراجعة الواجهات)',
+        overplannedNegotiation: {
+          discussionNotes: 'تمت مناقشة إعادة تصميم جدول الحصص وفروق التوقيت للطلاب بالخارج، وتم استهلاك 12 ساعة زيادة لتغطية حالات الـ Edge Cases.',
+          actions: [
+            {
+              id: 'act-op-3',
+              text: 'إلزام فريق التصميم بتقديم الحالات الشاذة قبل بدء الاختبار',
+              done: false,
+              dueDate: '2026-11-06',
+              createdBy: 'أ/ رضوى',
+            },
+          ],
         },
-      ],
-    },
-    ticketsScreen: {
-      discussionNotes: 'تذكرة خطأ العرض في متصفح سفاري تم حلها وإعادة اختبارها بنجاح.',
-      actions: [
-        {
-          id: 'act-tk-2',
-          text: 'توثيق خطوات الاختبار في الـ Wiki الداخلي',
-          done: true,
-          dueDate: '2026-10-30',
-          createdBy: 'مدير الكواليتي (أحمد ضوي)',
-        },
-      ],
-      screenshotUrl: null,
-    },
-    meetingReport: {
-      fileUrl: null,
-    },
+      },
+    ],
+    activeMeetingId: 'mtg-sara-1',
   },
   {
     id: 'm3',
@@ -121,25 +140,17 @@ export const INITIAL_MEMBERS: QualityMemberReview[] = [
     role: 'Backend & Systems QA',
     lastUpdatedBy: 'مدير الكواليتي (أحمد ضوي)',
     lastUpdatedAt: 'أمس',
-    duration: {
-      startDate: '2026-09-25',
-      endDate: '2026-10-26',
-      notes: 'تقييم اختبارات الـ API والتحميل (Load Testing)',
-    },
-    totalTasksScreen: {
-      screenshotUrl: null,
-    },
-    overplannedNegotiation: {
-      discussionNotes: 'نقاش حول مهام اختبارات الأداء وسيرفرات البث في أوقات الذروة.',
-      actions: [],
-    },
-    ticketsScreen: {
-      discussionNotes: 'متابعة تذكرة خطأ 502 ومزامنة البيانات.',
-      actions: [],
-      screenshotUrl: null,
-    },
-    meetingReport: {
-      fileUrl: null,
-    },
+    meetings: [
+      {
+        ...sampleMeeting1,
+        id: 'mtg-omar-1',
+        title: 'Meeting 1 (اختبارات الأداء)',
+        overplannedNegotiation: {
+          discussionNotes: 'نقاش حول مهام اختبارات الأداء وسيرفرات البث في أوقات الذروة.',
+          actions: [],
+        },
+      },
+    ],
+    activeMeetingId: 'mtg-omar-1',
   },
 ];

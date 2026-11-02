@@ -1,84 +1,124 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { QualityMemberReview, ActionItem, AppUser, DashboardSyncData } from '../types/dashboard';
+import { QualityMemberReview, ActionItem, AppUser, DashboardSyncData, MeetingSession } from '../types/dashboard';
 import { INITIAL_MEMBERS, INITIAL_USERS } from '../data/initialData';
 
 interface DashboardContextType {
-  // Members
+  // Authentication & Users
+  currentUser: AppUser | null;
+  users: AppUser[];
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
+  addUser: (name: string, username: string, password: string, role?: string) => Promise<void>;
+  updateUser: (id: string, updates: Partial<AppUser>) => Promise<void>;
+  deleteUser: (id: string) => Promise<void>;
+
+  // Members & Meetings
   members: QualityMemberReview[];
   activeMemberId: string;
   activeMember: QualityMemberReview;
+  activeMeeting: MeetingSession;
   setActiveMemberId: (id: string) => void;
-  
-  // Users & Multi-user collaboration
-  users: AppUser[];
-  currentUser: AppUser;
-  setCurrentUser: (user: AppUser) => void;
-  addUser: (name: string, role?: string) => Promise<void>;
-  
-  // Live Sync Status
+  setActiveMeetingId: (meetingId: string) => void;
+  addMember: (name: string, role?: string) => void;
+  deleteMember: (id: string) => void;
+  addMeeting: (title?: string) => void;
+  deleteMeeting: (meetingId: string) => void;
+
+  // Sync state
   syncStatus: 'synced' | 'saving' | 'syncing' | 'offline';
   lastUpdatedBy: string;
   lastUpdatedAt: string;
   refreshFromServer: () => Promise<void>;
 
-  // Member management
-  addMember: (name: string, role?: string) => void;
-  deleteMember: (id: string) => void;
-  
   // Column 2: Duration
   updateMemberDuration: (startDate: string, endDate: string, notes?: string) => void;
-  
+
   // Column 3: Total Tasks Screen
   updateTotalTasksScreen: (screenshotUrl: string | null, fileName?: string) => void;
-  
+
   // Column 4: Overplanned Negotiation
   updateOverplannedDiscussion: (notes: string) => void;
   addOverplannedAction: (text: string, dueDate?: string) => void;
   toggleOverplannedAction: (actionId: string) => void;
   deleteOverplannedAction: (actionId: string) => void;
-  
+
   // Column 5: Tickets Screen
   updateTicketsDiscussion: (notes: string) => void;
   addTicketsAction: (text: string, dueDate?: string) => void;
   toggleTicketsAction: (actionId: string) => void;
   deleteTicketsAction: (actionId: string) => void;
-  updateTicketsScreenshot: (screenshotUrl: string | null) => void;
-  
+
   // Column 6: Meeting Report
   updateMeetingReportFile: (fileUrl: string | null, fileName?: string, fileSize?: string) => void;
   updateMeetingReportNotes: (notes: string) => void;
-  
+
   resetToDefaults: () => Promise<void>;
 }
 
-const STORAGE_KEY = 'quality_team_meeting_dashboard_v4';
-const USER_KEY = 'quality_team_current_user_v1';
+const STORAGE_KEY = 'quality_team_meeting_dashboard_v5';
+const USERS_STORAGE_KEY = 'quality_team_users_v2';
+const AUTH_SESSION_KEY = 'quality_team_auth_session_v1';
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
 
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [members, setMembers] = useState<QualityMemberReview[]>(() => {
+  // Users state
+  const [users, setUsers] = useState<AppUser[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : INITIAL_MEMBERS;
+      const saved = localStorage.getItem(USERS_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : INITIAL_USERS;
     } catch {
-      return INITIAL_MEMBERS;
+      return INITIAL_USERS;
     }
   });
 
-  const [users, setUsers] = useState<AppUser[]>(INITIAL_USERS);
-  const [currentUser, setCurrentUserState] = useState<AppUser>(() => {
+  // Current logged in user
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(() => {
     try {
-      const saved = localStorage.getItem(USER_KEY);
+      const saved = localStorage.getItem(AUTH_SESSION_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        const match = INITIAL_USERS.find((u) => u.id === parsed.id);
+        const match = users.find((u) => u.id === parsed.id);
         if (match) return match;
       }
     } catch {
       // ignore
     }
-    return INITIAL_USERS[0]; // Default: مدير الكواليتي
+    return null; // Require login screen by default
+  });
+
+  // Members state
+  const [members, setMembers] = useState<QualityMemberReview[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Ensure meeting structure exists if migrating from older version
+        return parsed.map((m: any) => {
+          if (!m.meetings || m.meetings.length === 0) {
+            const defaultMtg: MeetingSession = {
+              id: `mtg-${Date.now()}`,
+              title: 'Meeting 1',
+              createdAt: '2026-10-26',
+              duration: m.duration || { startDate: '2026-09-25', endDate: '2026-10-26' },
+              totalTasksScreen: m.totalTasksScreen || { screenshotUrl: null },
+              overplannedNegotiation: m.overplannedNegotiation || { discussionNotes: '', actions: [] },
+              ticketsScreen: m.ticketsScreen || { discussionNotes: '', actions: [] },
+              meetingReport: m.meetingReport || { fileUrl: null },
+            };
+            return {
+              ...m,
+              meetings: [defaultMtg],
+              activeMeetingId: defaultMtg.id,
+            };
+          }
+          return m;
+        });
+      }
+      return INITIAL_MEMBERS;
+    } catch {
+      return INITIAL_MEMBERS;
+    }
   });
 
   const [activeMemberId, setActiveMemberId] = useState<string>(() => {
@@ -91,29 +131,85 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const versionRef = useRef<number>(1);
   const isSavingRef = useRef<boolean>(false);
 
-  const setCurrentUser = (user: AppUser) => {
-    setCurrentUserState(user);
+  // Active member and active meeting
+  const activeMember = members.find((m) => m.id === activeMemberId) || members[0] || INITIAL_MEMBERS[0];
+  const activeMeeting: MeetingSession =
+    activeMember.meetings.find((mtg) => mtg.id === activeMember.activeMeetingId) ||
+    activeMember.meetings[0] || {
+      id: `mtg-${Date.now()}`,
+      title: 'Meeting 1',
+      createdAt: new Date().toISOString().split('T')[0],
+      duration: { startDate: '2026-09-25', endDate: '2026-10-26' },
+      totalTasksScreen: { screenshotUrl: null },
+      overplannedNegotiation: { discussionNotes: '', actions: [] },
+      ticketsScreen: { discussionNotes: '', actions: [] },
+      meetingReport: { fileUrl: null },
+    };
+
+  // Sync to local storage
+  useEffect(() => {
     try {
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(members));
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+      if (currentUser) {
+        localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(currentUser));
+      } else {
+        localStorage.removeItem(AUTH_SESSION_KEY);
+      }
     } catch {
-      // ignore
+      // quota fallback
+    }
+  }, [members, users, currentUser]);
+
+  // Login handler
+  const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    const trimmedUser = username.trim().toLowerCase();
+    const trimmedPass = password.trim();
+
+    // 1. First check local users (ensures GitHub Pages / offline works instantly)
+    const matched = users.find(
+      (u) => u.username.toLowerCase() === trimmedUser && u.password === trimmedPass
+    );
+
+    if (matched) {
+      setCurrentUser(matched);
+      localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(matched));
+      return { success: true };
+    }
+
+    // 2. Try server API login
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: trimmedUser, password: trimmedPass }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success && data.user) {
+        setCurrentUser(data.user);
+        localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(data.user));
+        return { success: true };
+      }
+      return { success: false, error: data.error || 'اسم المستخدم أو كلمة المرور غير صحيحة' };
+    } catch {
+      return { success: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' };
     }
   };
 
-  // Ensure active member always resolves
-  const activeMember = members.find((m) => m.id === activeMemberId) || members[0] || INITIAL_MEMBERS[0];
+  const logout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem(AUTH_SESSION_KEY);
+  };
 
   // Fetch state from server
   const refreshFromServer = async () => {
     try {
-      setSyncStatus('syncing');
       const res = await fetch('/api/dashboard');
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data) {
           const remoteData: DashboardSyncData = json.data;
 
-          // If remote version is newer and we aren't mid-save
           if (remoteData.version > versionRef.current && !isSavingRef.current) {
             versionRef.current = remoteData.version;
             setMembers(remoteData.members);
@@ -125,7 +221,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             }
             setLastUpdatedBy(remoteData.lastUpdatedBy);
             setLastUpdatedAt(remoteData.lastUpdatedAt);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteData.members));
           }
           setSyncStatus('synced');
         }
@@ -147,7 +242,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         body: JSON.stringify({
           members: newMembers,
           activeMemberId: newActiveId || activeMemberId,
-          updatedBy: currentUser.name,
+          updatedBy: currentUser ? currentUser.name : 'مستخدم الداشبورد',
         }),
       });
 
@@ -174,64 +269,74 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     refreshFromServer();
   }, []);
 
-  // Polling every 2.5 seconds to sync data between manager & Radwa
+  // Polling every 3 seconds to sync without interrupting typing
   useEffect(() => {
     const timer = setInterval(() => {
-      // Don't poll overwrite if user is actively focused on an input or textarea
       const activeEl = document.activeElement;
       const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
       if (!isTyping) {
         refreshFromServer();
       }
-    }, 2500);
+    }, 3000);
 
     return () => clearInterval(timer);
   }, [activeMemberId]);
 
-  const updateCurrentMember = (updater: (prev: QualityMemberReview) => QualityMemberReview) => {
+  // Update current member's ACTIVE MEETING
+  const updateCurrentMeeting = (updater: (prevMeeting: MeetingSession) => MeetingSession) => {
     const nowFormatted = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-    const updatedMembers = members.map((m) =>
-      m.id === activeMember.id
-        ? {
-            ...updater(m),
-            lastUpdatedBy: currentUser.name,
-            lastUpdatedAt: nowFormatted,
-          }
-        : m
-    );
+    const authorName = currentUser ? currentUser.name : 'مستخدم الداشبورد';
+
+    const updatedMembers = members.map((m) => {
+      if (m.id !== activeMember.id) return m;
+
+      const updatedMeetings = m.meetings.map((mtg) => {
+        if (mtg.id !== activeMeeting.id) return mtg;
+        return updater(mtg);
+      });
+
+      return {
+        ...m,
+        meetings: updatedMeetings,
+        lastUpdatedBy: authorName,
+        lastUpdatedAt: nowFormatted,
+      };
+    });
 
     setMembers(updatedMembers);
     pushToServer(updatedMembers);
   };
 
+  // Member Management
   const addMember = (name: string, role = 'Quality Engineer') => {
     if (!name.trim()) return;
-    const newMember: QualityMemberReview = {
-      id: `m-${Date.now()}`,
-      name: name.trim(),
-      role: role.trim() || 'Quality Engineer',
-      lastUpdatedBy: currentUser.name,
-      lastUpdatedAt: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+    const authorName = currentUser ? currentUser.name : 'مستخدم الداشبورد';
+    const initialMtgId = `mtg-${Date.now()}`;
+
+    const defaultMeeting: MeetingSession = {
+      id: initialMtgId,
+      title: 'Meeting 1',
+      createdAt: new Date().toISOString().split('T')[0],
+      createdBy: authorName,
       duration: {
         startDate: '2026-09-25',
         endDate: '2026-10-26',
         notes: '',
       },
-      totalTasksScreen: {
-        screenshotUrl: null,
-      },
-      overplannedNegotiation: {
-        discussionNotes: '',
-        actions: [],
-      },
-      ticketsScreen: {
-        discussionNotes: '',
-        actions: [],
-        screenshotUrl: null,
-      },
-      meetingReport: {
-        fileUrl: null,
-      },
+      totalTasksScreen: { screenshotUrl: null },
+      overplannedNegotiation: { discussionNotes: '', actions: [] },
+      ticketsScreen: { discussionNotes: '', actions: [] },
+      meetingReport: { fileUrl: null },
+    };
+
+    const newMember: QualityMemberReview = {
+      id: `m-${Date.now()}`,
+      name: name.trim(),
+      role: role.trim() || 'Quality Engineer',
+      meetings: [defaultMeeting],
+      activeMeetingId: initialMtgId,
+      lastUpdatedBy: authorName,
+      lastUpdatedAt: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
     };
 
     const updated = [...members, newMember];
@@ -252,11 +357,76 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     pushToServer(filtered, nextActiveId);
   };
 
-  const addUser = async (name: string, role = 'Quality Reviewer') => {
-    if (!name.trim()) return;
+  // Meeting Management per Member
+  const setActiveMeetingId = (meetingId: string) => {
+    const updated = members.map((m) => (m.id === activeMember.id ? { ...m, activeMeetingId: meetingId } : m));
+    setMembers(updated);
+    pushToServer(updated);
+  };
+
+  const addMeeting = (title?: string) => {
+    const authorName = currentUser ? currentUser.name : 'مستخدم الداشبورد';
+    const newMtgId = `mtg-${Date.now()}`;
+    const nextNumber = activeMember.meetings.length + 1;
+
+    const newMeeting: MeetingSession = {
+      id: newMtgId,
+      title: title || `Meeting ${nextNumber}`,
+      createdAt: new Date().toISOString().split('T')[0],
+      createdBy: authorName,
+      duration: {
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        notes: '',
+      },
+      totalTasksScreen: { screenshotUrl: null },
+      overplannedNegotiation: { discussionNotes: '', actions: [] },
+      ticketsScreen: { discussionNotes: '', actions: [] },
+      meetingReport: { fileUrl: null },
+    };
+
+    const updated = members.map((m) => {
+      if (m.id !== activeMember.id) return m;
+      return {
+        ...m,
+        meetings: [...m.meetings, newMeeting],
+        activeMeetingId: newMtgId,
+        lastUpdatedBy: authorName,
+        lastUpdatedAt: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+      };
+    });
+
+    setMembers(updated);
+    pushToServer(updated);
+  };
+
+  const deleteMeeting = (meetingId: string) => {
+    if (activeMember.meetings.length <= 1) {
+      alert('يجب أن يتبقى ميتينج واحد على الأقل لهذا العضو.');
+      return;
+    }
+    const updated = members.map((m) => {
+      if (m.id !== activeMember.id) return m;
+      const filteredMtgs = m.meetings.filter((mtg) => mtg.id !== meetingId);
+      return {
+        ...m,
+        meetings: filteredMtgs,
+        activeMeetingId: m.activeMeetingId === meetingId ? filteredMtgs[0].id : m.activeMeetingId,
+      };
+    });
+
+    setMembers(updated);
+    pushToServer(updated);
+  };
+
+  // User Management
+  const addUser = async (name: string, username: string, password: string, role = 'Quality Engineer') => {
+    if (!name.trim() || !username.trim() || !password.trim()) return;
     const colors = ['bg-indigo-600', 'bg-emerald-600', 'bg-amber-600', 'bg-rose-600', 'bg-violet-600', 'bg-cyan-600'];
     const newUser: AppUser = {
       id: `user-${Date.now()}`,
+      username: username.trim(),
+      password: password.trim(),
       name: name.trim(),
       role: role.trim(),
       color: colors[users.length % colors.length],
@@ -264,22 +434,64 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     const updatedUsers = [...users, newUser];
     setUsers(updatedUsers);
-    setCurrentUser(newUser);
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
 
     try {
       await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user: newUser, updatedBy: currentUser.name }),
+        body: JSON.stringify({ user: newUser, updatedBy: currentUser ? currentUser.name : 'المدير' }),
       });
     } catch {
       // offline fallback
     }
   };
 
+  const updateUser = async (id: string, updates: Partial<AppUser>) => {
+    const updatedUsers = users.map((u) => (u.id === id ? { ...u, ...updates } : u));
+    setUsers(updatedUsers);
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+
+    const updatedUser = updatedUsers.find((u) => u.id === id);
+    if (updatedUser) {
+      if (currentUser?.id === id) {
+        setCurrentUser(updatedUser);
+      }
+      try {
+        await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user: updatedUser }),
+        });
+      } catch {
+        // offline
+      }
+    }
+  };
+
+  const deleteUser = async (id: string) => {
+    if (users.length <= 1) {
+      alert('لا يمكن حذف المستخدم الوحيد.');
+      return;
+    }
+    const updatedUsers = users.filter((u) => u.id !== id);
+    setUsers(updatedUsers);
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
+
+    if (currentUser?.id === id) {
+      setCurrentUser(updatedUsers[0]);
+    }
+
+    try {
+      await fetch(`/api/users/${id}`, { method: 'DELETE' });
+    } catch {
+      // offline
+    }
+  };
+
   // Column 2: Duration
   const updateMemberDuration = (startDate: string, endDate: string, notes?: string) => {
-    updateCurrentMember((prev) => ({
+    updateCurrentMeeting((prev) => ({
       ...prev,
       duration: {
         startDate,
@@ -291,11 +503,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Column 3: Total Tasks Screen
   const updateTotalTasksScreen = (screenshotUrl: string | null, fileName?: string) => {
-    updateCurrentMember((prev) => ({
+    updateCurrentMeeting((prev) => ({
       ...prev,
       totalTasksScreen: {
         screenshotUrl,
-        fileName: fileName || (screenshotUrl ? 'system_tasks_screenshot.png' : undefined),
+        fileName: fileName || (screenshotUrl ? 'tasks_screenshot.png' : undefined),
         uploadedAt: screenshotUrl ? new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : undefined,
       },
     }));
@@ -303,7 +515,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Column 4: Overplanned Negotiation
   const updateOverplannedDiscussion = (notes: string) => {
-    updateCurrentMember((prev) => ({
+    updateCurrentMeeting((prev) => ({
       ...prev,
       overplannedNegotiation: {
         ...prev.overplannedNegotiation,
@@ -314,15 +526,16 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const addOverplannedAction = (text: string, dueDate?: string) => {
     if (!text.trim()) return;
+    const authorName = currentUser ? currentUser.name : 'مستخدم الداشبورد';
     const newAction: ActionItem = {
       id: `act-op-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       text: text.trim(),
       done: false,
       dueDate: dueDate || new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      createdBy: currentUser.name,
+      createdBy: authorName,
     };
 
-    updateCurrentMember((prev) => ({
+    updateCurrentMeeting((prev) => ({
       ...prev,
       overplannedNegotiation: {
         ...prev.overplannedNegotiation,
@@ -332,19 +545,17 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const toggleOverplannedAction = (actionId: string) => {
-    updateCurrentMember((prev) => ({
+    updateCurrentMeeting((prev) => ({
       ...prev,
       overplannedNegotiation: {
         ...prev.overplannedNegotiation,
-        actions: prev.overplannedNegotiation.actions.map((a) =>
-          a.id === actionId ? { ...a, done: !a.done } : a
-        ),
+        actions: prev.overplannedNegotiation.actions.map((a) => (a.id === actionId ? { ...a, done: !a.done } : a)),
       },
     }));
   };
 
   const deleteOverplannedAction = (actionId: string) => {
-    updateCurrentMember((prev) => ({
+    updateCurrentMeeting((prev) => ({
       ...prev,
       overplannedNegotiation: {
         ...prev.overplannedNegotiation,
@@ -355,7 +566,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Column 5: Tickets Screen
   const updateTicketsDiscussion = (notes: string) => {
-    updateCurrentMember((prev) => ({
+    updateCurrentMeeting((prev) => ({
       ...prev,
       ticketsScreen: {
         ...prev.ticketsScreen,
@@ -366,15 +577,16 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const addTicketsAction = (text: string, dueDate?: string) => {
     if (!text.trim()) return;
+    const authorName = currentUser ? currentUser.name : 'مستخدم الداشبورد';
     const newAction: ActionItem = {
       id: `act-tk-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       text: text.trim(),
       done: false,
       dueDate: dueDate || new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      createdBy: currentUser.name,
+      createdBy: authorName,
     };
 
-    updateCurrentMember((prev) => ({
+    updateCurrentMeeting((prev) => ({
       ...prev,
       ticketsScreen: {
         ...prev.ticketsScreen,
@@ -384,19 +596,17 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const toggleTicketsAction = (actionId: string) => {
-    updateCurrentMember((prev) => ({
+    updateCurrentMeeting((prev) => ({
       ...prev,
       ticketsScreen: {
         ...prev.ticketsScreen,
-        actions: prev.ticketsScreen.actions.map((a) =>
-          a.id === actionId ? { ...a, done: !a.done } : a
-        ),
+        actions: prev.ticketsScreen.actions.map((a) => (a.id === actionId ? { ...a, done: !a.done } : a)),
       },
     }));
   };
 
   const deleteTicketsAction = (actionId: string) => {
-    updateCurrentMember((prev) => ({
+    updateCurrentMeeting((prev) => ({
       ...prev,
       ticketsScreen: {
         ...prev.ticketsScreen,
@@ -405,19 +615,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }));
   };
 
-  const updateTicketsScreenshot = (screenshotUrl: string | null) => {
-    updateCurrentMember((prev) => ({
-      ...prev,
-      ticketsScreen: {
-        ...prev.ticketsScreen,
-        screenshotUrl,
-      },
-    }));
-  };
-
   // Column 6: Meeting Report
   const updateMeetingReportFile = (fileUrl: string | null, fileName?: string, fileSize?: string) => {
-    updateCurrentMember((prev) => ({
+    updateCurrentMeeting((prev) => ({
       ...prev,
       meetingReport: {
         ...prev.meetingReport,
@@ -430,7 +630,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const updateMeetingReportNotes = (notes: string) => {
-    updateCurrentMember((prev) => ({
+    updateCurrentMeeting((prev) => ({
       ...prev,
       meetingReport: {
         ...prev.meetingReport,
@@ -459,20 +659,27 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   return (
     <DashboardContext.Provider
       value={{
+        currentUser,
+        users,
+        login,
+        logout,
+        addUser,
+        updateUser,
+        deleteUser,
         members,
         activeMemberId,
         activeMember,
+        activeMeeting,
         setActiveMemberId,
-        users,
-        currentUser,
-        setCurrentUser,
-        addUser,
+        setActiveMeetingId,
+        addMember,
+        deleteMember,
+        addMeeting,
+        deleteMeeting,
         syncStatus,
         lastUpdatedBy,
         lastUpdatedAt,
         refreshFromServer,
-        addMember,
-        deleteMember,
         updateMemberDuration,
         updateTotalTasksScreen,
         updateOverplannedDiscussion,
@@ -483,7 +690,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         addTicketsAction,
         toggleTicketsAction,
         deleteTicketsAction,
-        updateTicketsScreenshot,
         updateMeetingReportFile,
         updateMeetingReportNotes,
         resetToDefaults,

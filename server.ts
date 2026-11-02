@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { INITIAL_MEMBERS, INITIAL_USERS } from './src/data/initialData.ts';
+import { QualityMemberReview, AppUser } from './src/types/dashboard.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,10 +24,9 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// In-memory state initialized from disk or defaults
 interface ServerState {
-  members: typeof INITIAL_MEMBERS;
-  users: typeof INITIAL_USERS;
+  members: QualityMemberReview[];
+  users: AppUser[];
   activeMemberId: string;
   version: number;
   lastUpdatedBy: string;
@@ -48,12 +48,17 @@ if (fs.existsSync(DB_FILE)) {
     const raw = fs.readFileSync(DB_FILE, 'utf-8');
     const parsed = JSON.parse(raw);
     serverState = { ...serverState, ...parsed };
+    // Ensure users have passwords if migrating from older schema
+    serverState.users = serverState.users.map((u) => ({
+      ...u,
+      username: u.username || u.name.split(' ')[0].toLowerCase(),
+      password: u.password || 'password123',
+    }));
     console.log('[Server] Loaded persistent database from disk.');
   } catch (err) {
     console.error('[Server] Failed to parse database file, using defaults.', err);
   }
 } else {
-  // Save initial database
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(serverState, null, 2), 'utf-8');
     console.log('[Server] Initialized new database on disk.');
@@ -78,6 +83,29 @@ app.get('/api/dashboard', (_req, res) => {
   });
 });
 
+// API: Login verification
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ success: false, error: 'يرجى إدخال اسم المستخدم وكلمة المرور' });
+  }
+
+  const user = serverState.users.find(
+    (u) =>
+      u.username.trim().toLowerCase() === username.trim().toLowerCase() &&
+      u.password === password.trim()
+  );
+
+  if (!user) {
+    return res.status(401).json({ success: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
+  }
+
+  res.json({
+    success: true,
+    user,
+  });
+});
+
 // API: Update dashboard members and active member
 app.post('/api/dashboard', (req, res) => {
   const { members, activeMemberId, updatedBy } = req.body;
@@ -89,7 +117,7 @@ app.post('/api/dashboard', (req, res) => {
     serverState.activeMemberId = activeMemberId;
   }
   serverState.version += 1;
-  serverState.lastUpdatedBy = updatedBy || 'مدير الكواليتي';
+  serverState.lastUpdatedBy = updatedBy || 'مستخدم الداشبورد';
   serverState.lastUpdatedAt = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
 
   persistToDisk();
@@ -102,11 +130,11 @@ app.post('/api/dashboard', (req, res) => {
   });
 });
 
-// API: Add or update users list
+// API: Add or update users
 app.post('/api/users', (req, res) => {
   const { user, updatedBy } = req.body;
-  if (!user || !user.name) {
-    return res.status(400).json({ error: 'User name is required' });
+  if (!user || !user.name || !user.username || !user.password) {
+    return res.status(400).json({ error: 'الاسم واسم المستخدم وكلمة المرور مطلوبة' });
   }
 
   const existingIdx = serverState.users.findIndex((u) => u.id === user.id);
@@ -126,6 +154,23 @@ app.post('/api/users', (req, res) => {
     success: true,
     users: serverState.users,
     version: serverState.version,
+  });
+});
+
+// API: Delete user
+app.delete('/api/users/:id', (req, res) => {
+  const { id } = req.params;
+  if (serverState.users.length <= 1) {
+    return res.status(400).json({ error: 'لا يمكن حذف آخر مستخدم' });
+  }
+
+  serverState.users = serverState.users.filter((u) => u.id !== id);
+  serverState.version += 1;
+  persistToDisk();
+
+  res.json({
+    success: true,
+    users: serverState.users,
   });
 });
 

@@ -8,46 +8,47 @@ export interface ActionItem {
 
 export interface AppUser {
   id: string;
+  username: string;
+  password: string; // Password set by admin
   name: string;
   role: string;
   color: string;
 }
 
-export interface QualityMemberReview {
+export interface MeetingSession {
   id: string;
-  name: string;
-  role: string;
-  lastUpdatedBy?: string;
-  lastUpdatedAt?: string;
+  title: string; // e.g. "Meeting 1", "Meeting 2"
+  createdAt: string;
+  createdBy?: string;
 
-  // 2. Duration: الفترة الزمنية لحساب البرفورمانس
+  // 2. Duration
   duration: {
     startDate: string; // e.g. "2026-09-25"
     endDate: string;   // e.g. "2026-10-26"
     notes?: string;
   };
 
-  // 3. Total Tasks Screen: سكرين شوت من السيستم للتاسكات والأوفر بلاند
+  // 3. Total Tasks Screen
   totalTasksScreen: {
     screenshotUrl: string | null;
     fileName?: string;
     uploadedAt?: string;
   };
 
-  // 4. Overplanned Negotiation: خانة النقاش + خانة الأكشنز
+  // 4. Overplanned Negotiation
   overplannedNegotiation: {
-    discussionNotes: string; // النقاش اللي دار ما بيني وبين الشخص
-    actions: ActionItem[];   // الأكشنز عشان نحل الأوفر بلاند
+    discussionNotes: string;
+    actions: ActionItem[];
   };
 
-  // 5. Tickets Screen: خانة للنيجوشيشن + خانة للأكشنز
+  // 5. Tickets Screen
   ticketsScreen: {
-    discussionNotes: string; // خانة النيجوشيشن
-    actions: ActionItem[];   // خانة الأكشنز
+    discussionNotes: string;
+    actions: ActionItem[];
     screenshotUrl?: string | null;
   };
 
-  // 6. Meeting Report: رفع ريبورت ملخص الميتينج لإرساله للشخص
+  // 6. Meeting Report
   meetingReport: {
     fileUrl: string | null;
     fileName?: string;
@@ -55,6 +56,16 @@ export interface QualityMemberReview {
     uploadedAt?: string;
     notes?: string;
   };
+}
+
+export interface QualityMemberReview {
+  id: string;
+  name: string;
+  role: string;
+  meetings: MeetingSession[];
+  activeMeetingId: string;
+  lastUpdatedBy?: string;
+  lastUpdatedAt?: string;
 }
 
 export interface DashboardSyncData {

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { DashboardProvider, useDashboard } from './context/DashboardContext';
+import { LoginScreen } from './components/LoginScreen';
+import { UsersManagementModal } from './components/UsersManagementModal';
 import { Column1Quality } from './components/columns/Column1Quality';
 import { Column2Duration } from './components/columns/Column2Duration';
 import { Column3TotalTasks } from './components/columns/Column3TotalTasks';
@@ -7,23 +9,23 @@ import { Column4Overplanned } from './components/columns/Column4Overplanned';
 import { Column5Tickets } from './components/columns/Column5Tickets';
 import { Column6MeetingReport } from './components/columns/Column6MeetingReport';
 import {
-  RotateCcw,
-  User,
   Users,
-  Plus,
+  LogOut,
   RefreshCw,
-  CheckCircle2,
-  Cloud,
-  ChevronDown,
+  RotateCcw,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  Calendar,
 } from 'lucide-react';
 
-const DashboardBoard: React.FC = () => {
+const DashboardContent: React.FC = () => {
   const {
-    activeMember,
-    users,
     currentUser,
-    setCurrentUser,
-    addUser,
+    users,
+    logout,
+    activeMember,
+    activeMeeting,
     syncStatus,
     lastUpdatedBy,
     lastUpdatedAt,
@@ -31,32 +33,37 @@ const DashboardBoard: React.FC = () => {
     resetToDefaults,
   } = useDashboard();
 
-  const [showAddUserModal, setShowAddUserModal] = useState(false);
-  const [newUserName, setNewUserName] = useState('');
-  const [newUserRole, setNewUserRole] = useState('Quality Engineer');
+  const [showUsersModal, setShowUsersModal] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState<number>(85); // Default comfortable scale 85% so all 6 columns fit gracefully!
 
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newUserName.trim()) return;
-    await addUser(newUserName, newUserRole);
-    setNewUserName('');
-    setNewUserRole('Quality Engineer');
-    setShowAddUserModal(false);
-  };
+  // If user is not authenticated, show the LoginScreen
+  if (!currentUser) {
+    return <LoginScreen />;
+  }
+
+  const zoomScaleClass =
+    zoomLevel === 75
+      ? 'scale-75 origin-top-left'
+      : zoomLevel === 80
+      ? 'scale-80 origin-top-left'
+      : zoomLevel === 85
+      ? 'scale-85 origin-top-left'
+      : zoomLevel === 90
+      ? 'scale-90 origin-top-left'
+      : 'scale-100 origin-top-left';
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-100 text-slate-900 font-sans">
-      {/* Top Bar Header with Elkheta Logo & Multi-User Switcher */}
-      <header className="bg-white border-b border-slate-200 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-2xs">
+    <div className="min-h-screen flex flex-col bg-slate-100 text-slate-900 font-sans selection:bg-indigo-500 selection:text-white">
+      {/* Top Header Bar */}
+      <header className="bg-white border-b border-slate-200 px-4 py-2 flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-2xs z-30">
         {/* Left: Elkheta Platform Logo & Dashboard Title */}
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg overflow-hidden border border-slate-200 bg-white shadow-2xs flex items-center justify-center shrink-0">
+          <div className="h-10 w-10 rounded-xl overflow-hidden border border-slate-200 bg-white shadow-2xs flex items-center justify-center shrink-0">
             <img
               src="/logo.png"
               alt="لوجو منصة الخطة"
               className="h-full w-full object-contain p-0.5"
               onError={(e) => {
-                // Fallback to external url if local path is unavailable
                 const target = e.target as HTMLImageElement;
                 if (!target.src.includes('logopng-omega.vercel.app')) {
                   target.src = 'https://logopng-omega.vercel.app/file.png';
@@ -75,185 +82,182 @@ const DashboardBoard: React.FC = () => {
               </span>
             </div>
             <p className="text-[11px] text-slate-500" dir="rtl">
-              داشبورد مشتركة لحساب أداء الكواليتي مع الحفظ والمزامنة المباشرة
+              مراجعة أداء فريق الكواليتي · {activeMember.name} ({activeMeeting.title})
             </p>
           </div>
         </div>
 
-        {/* Center: Live Sync Status Badge */}
-        <div className="hidden lg:flex items-center gap-2 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg text-[11px] text-slate-600" dir="rtl">
-          <span className="flex items-center gap-1 font-semibold">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                syncStatus === 'synced'
-                  ? 'bg-emerald-500'
-                  : syncStatus === 'saving'
-                  ? 'bg-amber-500 animate-pulse'
-                  : syncStatus === 'syncing'
-                  ? 'bg-indigo-500 animate-spin'
-                  : 'bg-rose-500'
-              }`}
-            />
-            <span>{syncStatus === 'saving' ? 'جاري الحفظ...' : syncStatus === 'syncing' ? 'مزامنة...' : 'محفوظ ومشترك'}</span>
-          </span>
-          <span className="text-slate-300">·</span>
-          <span>آخر تعديل: <strong className="text-slate-800">{lastUpdatedBy}</strong> ({lastUpdatedAt})</span>
-          <button
-            onClick={() => refreshFromServer()}
-            className="p-1 text-slate-400 hover:text-indigo-600 transition-colors"
-            title="تحديث البيانات من السيرفر الآن"
-          >
-            <RefreshCw className="w-3 h-3" />
-          </button>
-        </div>
-
-        {/* Right: Active User Selector & Add User */}
-        <div className="flex items-center gap-2.5" dir="rtl">
-          {/* Active User Switcher */}
-          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 p-1 rounded-lg">
-            <span className="text-[11px] text-slate-500 font-medium px-1">المستخدم الآن:</span>
-            <select
-              value={currentUser.id}
-              onChange={(e) => {
-                const selected = users.find((u) => u.id === e.target.value);
-                if (selected) setCurrentUser(selected);
-              }}
-              className="text-xs font-bold bg-white border border-slate-300 text-slate-800 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
-            >
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name} ({u.role})
-                </option>
-              ))}
-            </select>
-
+        {/* Center: Live Sync & Scale Adjuster */}
+        <div className="flex items-center gap-3">
+          {/* Zoom / Scaling Control to comfortably fit all columns without zooming out browser */}
+          <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 p-1 rounded-lg text-xs">
+            <span className="text-[11px] text-slate-500 font-medium px-1.5" dir="rtl">
+              حجم العرض:
+            </span>
             <button
-              onClick={() => setShowAddUserModal(true)}
-              className="flex items-center gap-1 px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-medium transition-colors"
-              title="إضافة يوزر ثالث أو مستخدم إضافي"
+              type="button"
+              onClick={() => setZoomLevel(Math.max(75, zoomLevel - 5))}
+              className="p-1 hover:bg-slate-200 rounded text-slate-600 transition-colors"
+              title="تصغير العرض"
             >
-              <Plus className="w-3 h-3" />
-              <span>يوزر جديد</span>
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-[11px] font-mono font-bold text-slate-700 px-1">
+              {zoomLevel}%
+            </span>
+            <button
+              type="button"
+              onClick={() => setZoomLevel(Math.min(100, zoomLevel + 5))}
+              className="p-1 hover:bg-slate-200 rounded text-slate-600 transition-colors"
+              title="تكبير العرض"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setZoomLevel(zoomLevel === 100 ? 85 : 100)}
+              className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-medium text-slate-700 hover:bg-slate-100"
+              title="تبديل ملاءمة الشاشة"
+            >
+              {zoomLevel === 100 ? 'ملاءمة الشاشة' : '100%'}
             </button>
           </div>
 
-          {/* Reset */}
+          {/* Sync Status Badge */}
+          <div
+            className="hidden md:flex items-center gap-2 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg text-[11px] text-slate-600"
+            dir="rtl"
+          >
+            <span className="flex items-center gap-1 font-semibold">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  syncStatus === 'synced'
+                    ? 'bg-emerald-500'
+                    : syncStatus === 'saving'
+                    ? 'bg-amber-500 animate-pulse'
+                    : syncStatus === 'syncing'
+                    ? 'bg-indigo-500 animate-spin'
+                    : 'bg-rose-500'
+                }`}
+              />
+              <span>{syncStatus === 'saving' ? 'جاري الحفظ...' : syncStatus === 'syncing' ? 'مزامنة...' : 'محفوظ ومشترك'}</span>
+            </span>
+            <span className="text-slate-300">·</span>
+            <span className="truncate max-w-[150px]">
+              آخر تعديل: <strong className="text-slate-800">{lastUpdatedBy}</strong>
+            </span>
+            <button
+              onClick={() => refreshFromServer()}
+              className="p-1 text-slate-400 hover:text-indigo-600 transition-colors"
+              title="تحديث البيانات من السيرفر"
+            >
+              <RefreshCw className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+
+        {/* Right: User Management Tab, Profile & Logout */}
+        <div className="flex items-center gap-2" dir="rtl">
+          {/* Users Management Button */}
           <button
+            type="button"
+            onClick={() => setShowUsersModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:border-indigo-400 text-slate-800 hover:text-indigo-600 rounded-lg text-xs font-bold transition-all shadow-2xs"
+            title="إدارة المستخدمين وكلمات المرور"
+          >
+            <Users className="w-3.5 h-3.5 text-indigo-600" />
+            <span>المستخدمين</span>
+            <span className="px-1.5 py-0.2 bg-indigo-100 text-indigo-700 rounded-full text-[10px] font-mono">
+              {users.length}
+            </span>
+          </button>
+
+          {/* Current User Info */}
+          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
+            <div className={`w-6 h-6 rounded-full ${currentUser.color || 'bg-indigo-600'} text-white flex items-center justify-center font-bold text-[10px]`}>
+              {currentUser.name.slice(0, 2)}
+            </div>
+            <div className="text-right">
+              <div className="text-xs font-bold text-slate-900 leading-tight">
+                {currentUser.name}
+              </div>
+              <div className="text-[10px] text-slate-500 leading-tight">
+                {currentUser.role}
+              </div>
+            </div>
+          </div>
+
+          {/* Logout Button */}
+          <button
+            type="button"
+            onClick={logout}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg font-medium transition-colors"
+            title="تسجيل الخروج من الداشبورد"
+          >
+            <LogOut className="w-3.5 h-3.5 rotate-180" />
+            <span>خروج</span>
+          </button>
+
+          {/* Reset to defaults (accessible by manager) */}
+          <button
+            type="button"
             onClick={() => {
-              if (window.confirm('هل تريد استعادة البيانات الافتراضية؟')) {
+              if (window.confirm('هل تريد استعادة البيانات الافتراضية للداشبورد؟')) {
                 resetToDefaults();
               }
             }}
             className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
             title="استعادة البيانات الافتراضية"
           >
-            <RotateCcw className="w-4 h-4" />
+            <RotateCcw className="w-3.5 h-3.5" />
           </button>
         </div>
       </header>
 
-      {/* Main 6 Columns Side-by-Side strictly from Left to Right */}
-      <main className="flex-1 p-4 overflow-x-auto scrollbar-thin">
+      {/* Main 6 Columns Container */}
+      <main className="flex-1 p-3 overflow-x-auto overflow-y-hidden scrollbar-thin">
         <div
           dir="ltr"
-          className="flex flex-row items-stretch gap-4 h-[calc(100vh-85px)] min-w-[2100px]"
+          style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top left', width: `${100 / (zoomLevel / 100)}%` }}
+          className="flex flex-row items-stretch gap-3 h-[calc((100vh-68px)/var(--zoom-factor,1))]"
         >
           {/* Column 1: Quality */}
-          <div className="w-[320px] min-w-[300px] shrink-0 h-full">
+          <div className="w-[280px] shrink-0 h-full">
             <Column1Quality />
           </div>
 
           {/* Column 2: Duration */}
-          <div className="w-[330px] min-w-[310px] shrink-0 h-full">
+          <div className="w-[290px] shrink-0 h-full">
             <Column2Duration />
           </div>
 
           {/* Column 3: Total Tasks Screen */}
-          <div className="w-[380px] min-w-[350px] shrink-0 h-full">
+          <div className="w-[320px] shrink-0 h-full">
             <Column3TotalTasks />
           </div>
 
           {/* Column 4: Overplanned Negotiation */}
-          <div className="w-[410px] min-w-[380px] shrink-0 h-full">
+          <div className="w-[340px] shrink-0 h-full">
             <Column4Overplanned />
           </div>
 
           {/* Column 5: Tickets Screen */}
-          <div className="w-[410px] min-w-[380px] shrink-0 h-full">
+          <div className="w-[340px] shrink-0 h-full">
             <Column5Tickets />
           </div>
 
           {/* Column 6: Meeting Report */}
-          <div className="w-[400px] min-w-[370px] shrink-0 h-full">
+          <div className="w-[330px] shrink-0 h-full">
             <Column6MeetingReport />
           </div>
         </div>
       </main>
 
-      {/* Add User Modal */}
-      {showAddUserModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-5 border border-slate-200" dir="rtl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <Users className="w-4 h-4 text-indigo-600" />
-                <span>إضافة مستخدم جديد للداشبورد</span>
-              </h3>
-              <button
-                onClick={() => setShowAddUserModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-sm font-bold p-1"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-500 mt-2 mb-3">
-              أضف يوزر ثالث أو شخص إضافي ليتمكن من التفاعل والمشاركة على الداشبورد:
-            </p>
-
-            <form onSubmit={handleCreateUser} className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">اسم المستخدم *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="مثال: م. حسام الدين أو م. ياسمين"
-                  value={newUserName}
-                  onChange={(e) => setNewUserName(e.target.value)}
-                  className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">المسمى أو الدور</label>
-                <input
-                  type="text"
-                  placeholder="مثال: Technical Lead أو Quality Auditor"
-                  value={newUserRole}
-                  onChange={(e) => setNewUserRole(e.target.value)}
-                  className="w-full text-xs p-2.5 bg-slate-50 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowAddUserModal(false)}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-semibold"
-                >
-                  حفظ وتفعيل المستخدم
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Users Management Modal */}
+      <UsersManagementModal
+        isOpen={showUsersModal}
+        onClose={() => setShowUsersModal(false)}
+      />
     </div>
   );
 };
@@ -261,7 +265,7 @@ const DashboardBoard: React.FC = () => {
 export default function App() {
   return (
     <DashboardProvider>
-      <DashboardBoard />
+      <DashboardContent />
     </DashboardProvider>
   );
 }
