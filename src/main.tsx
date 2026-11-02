@@ -41,10 +41,10 @@ class RootErrorBoundary extends Component<Props, State> {
       return (
         <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 text-white" dir="rtl">
           <div className="max-w-md w-full bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-2xl text-center space-y-4">
-            <div className="w-16 h-16 bg-white rounded-2xl mx-auto p-2 flex items-center justify-center">
-              <img src="./logo.png" alt="الخطة" className="w-full h-full object-contain" />
+            <div className="w-16 h-16 overflow-hidden rounded-2xl border-2 border-yellow-400 bg-sky-500 mx-auto flex items-center justify-center">
+              <img src="./logo.png" alt="شعار المنصة" className="w-full h-full object-cover" />
             </div>
-            <h1 className="text-base font-bold text-white">منصة الخطة - داشبورد الكواليتي</h1>
+            <h1 className="text-base font-bold text-white">Quality Performance Meetings Dashboard</h1>
             <p className="text-xs text-slate-300">
               تم اكتشاف نسخة ذاكرة مؤقتة قديمة في متصفحك. اضغط على الزر بالأسفل لتحديث البيانات وفتح الداشبورد فوراً.
             </p>

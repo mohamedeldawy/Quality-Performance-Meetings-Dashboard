@@ -39,11 +39,11 @@ export const LoginScreen: React.FC = () => {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
         {/* Top Header */}
         <div className="bg-slate-900 p-6 text-center text-white relative">
-          <div className="mx-auto w-16 h-16 bg-white rounded-xl p-1 shadow-md mb-3 flex items-center justify-center">
+          <div className="mx-auto w-16 h-16 overflow-hidden rounded-2xl border-2 border-yellow-400 bg-sky-500 shadow-lg ring-1 ring-blue-800 mb-3 flex items-center justify-center">
             <img
               src="./logo.png"
-              alt="لوجو منصة الخطة"
-              className="w-full h-full object-contain"
+              alt="شعار المنصة"
+              className="w-full h-full object-cover"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 if (!target.src.includes('logopng-omega.vercel.app')) {
@@ -52,9 +52,9 @@ export const LoginScreen: React.FC = () => {
               }}
             />
           </div>
-          <h1 className="text-lg font-bold">منصة الخطة التعليمية</h1>
-          <p className="text-xs text-indigo-300 font-medium mt-0.5">
-            داشبورد مراجعة أداء فريق الكواليتي (Quality Review)
+          <h1 className="text-base font-bold">Quality Performance Meetings Dashboard</h1>
+          <p className="text-xs text-sky-100 font-medium mt-0.5">
+            مراجعة أداء فريق الكواليتي
           </p>
         </div>
 

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { QualityMemberReview, ActionItem, AppUser, DashboardSyncData, MeetingSession } from '../types/dashboard';
+import { QualityLevel, QualityMemberProfile, QualityMemberReview, ActionItem, AppUser, DashboardSyncData, MeetingSession } from '../types/dashboard';
 import { INITIAL_MEMBERS, INITIAL_USERS } from '../data/initialData';
 
 interface DashboardContextType {
@@ -19,7 +19,8 @@ interface DashboardContextType {
   activeMeeting: MeetingSession;
   setActiveMemberId: (id: string) => void;
   setActiveMeetingId: (meetingId: string) => void;
-  addMember: (name: string, role?: string) => void;
+  addMember: (profile: QualityMemberProfile) => void;
+  updateMember: (id: string, updates: Partial<QualityMemberProfile>) => void;
   deleteMember: (id: string) => void;
   addMeeting: (title?: string) => void;
   deleteMeeting: (meetingId: string) => void;
@@ -58,6 +59,27 @@ interface DashboardContextType {
 const STORAGE_KEY = 'quality_team_meeting_dashboard_v6';
 const USERS_STORAGE_KEY = 'quality_team_users_v3';
 const AUTH_SESSION_KEY = 'quality_team_auth_session_v2';
+
+const getMigratedMemberProfile = (member: any): QualityMemberProfile => {
+  const defaultMember = INITIAL_MEMBERS.find((candidate) => candidate.id === member.id);
+  const level: QualityLevel =
+    member.level === 'Junior' || member.level === 'Middle' || member.level === 'Senior'
+      ? member.level
+      : defaultMember?.level || 'Middle';
+
+  return {
+    name: member.name || 'عضو جديد',
+    role: member.role === 'Frontend QA Specialist' ? 'Quality Engineer' : member.role || 'Quality Engineer',
+    level,
+    subject: member.subject || '',
+    schoolStages: member.schoolStages || '',
+    summaryGrades: member.summaryGrades || '',
+    quizGrades: member.quizGrades || '',
+    coursesReviewed: Number.isFinite(member.coursesReviewed) ? member.coursesReviewed : 0,
+    coursesProduced: Number.isFinite(member.coursesProduced) ? member.coursesProduced : 0,
+    photoUrl: member.photoUrl || null,
+  };
+};
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
 
@@ -124,8 +146,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               };
               return {
                 id: m.id || `m-${idx}`,
-                name: m.name || `Member ${idx + 1}`,
-                role: m.role || 'Quality Engineer',
+                ...getMigratedMemberProfile(m),
                 meetings: [defaultMtg],
                 activeMeetingId: defaultMtg.id,
                 lastUpdatedBy: m.lastUpdatedBy || 'النظام',
@@ -134,8 +155,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             }
             return {
               id: m.id || `m-${idx}`,
-              name: m.name || `Member ${idx + 1}`,
-              role: m.role || 'Quality Engineer',
+              ...getMigratedMemberProfile(m),
               meetings: m.meetings.map((mtg: any, mIdx: number) => ({
                 id: mtg.id || `mtg-${mIdx}`,
                 title: mtg.title || `Meeting ${mIdx + 1}`,
@@ -267,7 +287,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           if (remoteData.version > versionRef.current && !isSavingRef.current) {
             versionRef.current = remoteData.version;
             if (Array.isArray(remoteData.members) && remoteData.members.length > 0) {
-              setMembers(remoteData.members);
+              setMembers(remoteData.members.map((member) => ({
+                ...member,
+                ...getMigratedMemberProfile(member),
+              })));
             }
             if (Array.isArray(remoteData.users) && remoteData.users.length > 0) {
               setUsers(remoteData.users);
@@ -352,8 +375,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   // Member Management
-  const addMember = (name: string, role = 'Quality Engineer') => {
-    if (!name.trim()) return;
+  const addMember = (profile: QualityMemberProfile) => {
+    if (!profile.name.trim()) return;
     const authorName = currentUser ? currentUser.name : 'مستخدم الداشبورد';
     const initialMtgId = `mtg-${Date.now()}`;
 
@@ -375,8 +398,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     const newMember: QualityMemberReview = {
       id: `m-${Date.now()}`,
-      name: name.trim(),
-      role: role.trim() || 'Quality Engineer',
+      ...profile,
+      name: profile.name.trim(),
+      role: profile.role.trim() || 'Quality Engineer',
       meetings: [defaultMeeting],
       activeMeetingId: initialMtgId,
       lastUpdatedBy: authorName,
@@ -387,6 +411,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setMembers(updated);
     setActiveMemberId(newMember.id);
     pushToServer(updated, newMember.id);
+  };
+
+  const updateMember = (id: string, updates: Partial<QualityMemberProfile>) => {
+    const updated = members.map((member) =>
+      member.id === id ? { ...member, ...updates } : member
+    );
+    setMembers(updated);
+    pushToServer(updated);
   };
 
   const deleteMember = (id: string) => {
@@ -724,6 +756,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setActiveMemberId,
         setActiveMeetingId,
         addMember,
+        updateMember,
         deleteMember,
         addMeeting,
         deleteMeeting,

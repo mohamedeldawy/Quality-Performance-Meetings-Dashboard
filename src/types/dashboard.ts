@@ -15,6 +15,21 @@ export interface AppUser {
   color: string;
 }
 
+export type QualityLevel = 'Junior' | 'Middle' | 'Senior';
+
+export interface QualityMemberProfile {
+  name: string;
+  role: string;
+  level: QualityLevel;
+  subject: string;
+  schoolStages: string;
+  summaryGrades: string;
+  quizGrades: string;
+  coursesReviewed: number;
+  coursesProduced: number;
+  photoUrl: string | null;
+}
+
 export interface MeetingSession {
   id: string;
   title: string; // e.g. "Meeting 1", "Meeting 2"
@@ -58,10 +73,8 @@ export interface MeetingSession {
   };
 }
 
-export interface QualityMemberReview {
+export interface QualityMemberReview extends QualityMemberProfile {
   id: string;
-  name: string;
-  role: string;
   meetings: MeetingSession[];
   activeMeetingId: string;
   lastUpdatedBy?: string;

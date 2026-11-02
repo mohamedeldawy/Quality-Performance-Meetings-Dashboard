@@ -53,16 +53,16 @@ const DashboardContent: React.FC = () => {
       : 'scale-100 origin-top-left';
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-100 text-slate-900 font-sans selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-sky-50 text-slate-900 font-sans selection:bg-blue-700 selection:text-white">
       {/* Top Header Bar */}
-      <header className="bg-white border-b border-slate-200 px-4 py-2 flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-2xs z-30">
+      <header className="bg-blue-950 border-b-2 border-yellow-400 px-4 py-2 flex flex-wrap items-center justify-between gap-3 shrink-0 shadow-lg shadow-blue-950/15 z-30 text-white">
         {/* Left: Elkheta Platform Logo & Dashboard Title */}
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl overflow-hidden border border-slate-200 bg-white shadow-2xs flex items-center justify-center shrink-0">
+          <div className="h-12 w-12 rounded-2xl overflow-hidden border-2 border-yellow-400 bg-sky-500 shadow-lg shadow-blue-950/40 ring-1 ring-blue-800 flex items-center justify-center shrink-0">
             <img
               src="./logo.png"
-              alt="لوجو منصة الخطة"
-              className="h-full w-full object-contain p-0.5"
+              alt="شعار المنصة"
+              className="h-full w-full object-cover"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 if (!target.src.includes('logopng-omega.vercel.app')) {
@@ -73,15 +73,11 @@ const DashboardContent: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">
-                منصة الخطة التعليمية
-              </span>
-              <span className="text-slate-300">·</span>
-              <span className="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded">
-                Quality Review Dashboard
+              <span className="font-extrabold text-sm sm:text-base text-white tracking-tight">
+                Quality Performance Meetings Dashboard
               </span>
             </div>
-            <p className="text-[11px] text-slate-500" dir="rtl">
+            <p className="text-[11px] text-sky-100" dir="rtl">
               مراجعة أداء فريق الكواليتي · {activeMember.name} ({activeMeeting.title})
             </p>
           </div>
@@ -90,25 +86,25 @@ const DashboardContent: React.FC = () => {
         {/* Center: Live Sync & Scale Adjuster */}
         <div className="flex items-center gap-3">
           {/* Zoom / Scaling Control to comfortably fit all columns without zooming out browser */}
-          <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 p-1 rounded-lg text-xs">
-            <span className="text-[11px] text-slate-500 font-medium px-1.5" dir="rtl">
+          <div className="flex items-center gap-1 bg-blue-900 border border-blue-700 p-1 rounded-lg text-xs">
+            <span className="text-[11px] text-sky-100 font-medium px-1.5" dir="rtl">
               حجم العرض:
             </span>
             <button
               type="button"
               onClick={() => setZoomLevel(Math.max(75, zoomLevel - 5))}
-              className="p-1 hover:bg-slate-200 rounded text-slate-600 transition-colors"
+              className="p-1 hover:bg-blue-800 rounded text-white transition-colors"
               title="تصغير العرض"
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
-            <span className="text-[11px] font-mono font-bold text-slate-700 px-1">
+            <span className="text-[11px] font-mono font-bold text-white px-1">
               {zoomLevel}%
             </span>
             <button
               type="button"
               onClick={() => setZoomLevel(Math.min(100, zoomLevel + 5))}
-              className="p-1 hover:bg-slate-200 rounded text-slate-600 transition-colors"
+              className="p-1 hover:bg-blue-800 rounded text-white transition-colors"
               title="تكبير العرض"
             >
               <ZoomIn className="w-3.5 h-3.5" />
@@ -116,7 +112,7 @@ const DashboardContent: React.FC = () => {
             <button
               type="button"
               onClick={() => setZoomLevel(zoomLevel === 100 ? 85 : 100)}
-              className="px-1.5 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-medium text-slate-700 hover:bg-slate-100"
+              className="px-1.5 py-0.5 bg-yellow-400 border border-yellow-300 rounded text-[10px] font-bold text-blue-950 hover:bg-yellow-300"
               title="تبديل ملاءمة الشاشة"
             >
               {zoomLevel === 100 ? 'ملاءمة الشاشة' : '100%'}
@@ -125,7 +121,7 @@ const DashboardContent: React.FC = () => {
 
           {/* Sync Status Badge */}
           <div
-            className="hidden md:flex items-center gap-2 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg text-[11px] text-slate-600"
+            className="hidden md:flex items-center gap-2 bg-blue-900 border border-blue-700 px-2.5 py-1 rounded-lg text-[11px] text-sky-100"
             dir="rtl"
           >
             <span className="flex items-center gap-1 font-semibold">
@@ -142,13 +138,13 @@ const DashboardContent: React.FC = () => {
               />
               <span>{syncStatus === 'saving' ? 'جاري الحفظ...' : syncStatus === 'syncing' ? 'مزامنة...' : 'محفوظ ومشترك'}</span>
             </span>
-            <span className="text-slate-300">·</span>
+            <span className="text-blue-400">·</span>
             <span className="truncate max-w-[150px]">
-              آخر تعديل: <strong className="text-slate-800">{lastUpdatedBy}</strong>
+              آخر تعديل: <strong className="text-white">{lastUpdatedBy}</strong>
             </span>
             <button
               onClick={() => refreshFromServer()}
-              className="p-1 text-slate-400 hover:text-indigo-600 transition-colors"
+              className="p-1 text-sky-200 hover:text-yellow-300 transition-colors"
               title="تحديث البيانات من السيرفر"
             >
               <RefreshCw className="w-3 h-3" />
@@ -162,26 +158,26 @@ const DashboardContent: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowUsersModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:border-indigo-400 text-slate-800 hover:text-indigo-600 rounded-lg text-xs font-bold transition-all shadow-2xs"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-400 border border-yellow-300 hover:bg-yellow-300 text-blue-950 rounded-lg text-xs font-bold transition-all shadow-sm"
             title="إدارة المستخدمين وكلمات المرور"
           >
-            <Users className="w-3.5 h-3.5 text-indigo-600" />
+            <Users className="w-3.5 h-3.5 text-blue-950" />
             <span>المستخدمين</span>
-            <span className="px-1.5 py-0.2 bg-indigo-100 text-indigo-700 rounded-full text-[10px] font-mono">
+            <span className="px-1.5 py-0.2 bg-white/80 text-blue-950 rounded-full text-[10px] font-mono">
               {users.length}
             </span>
           </button>
 
           {/* Current User Info */}
-          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
+          <div className="flex items-center gap-2 bg-blue-900 border border-blue-700 px-2.5 py-1 rounded-lg">
             <div className={`w-6 h-6 rounded-full ${currentUser.color || 'bg-indigo-600'} text-white flex items-center justify-center font-bold text-[10px]`}>
               {currentUser.name.slice(0, 2)}
             </div>
             <div className="text-right">
-              <div className="text-xs font-bold text-slate-900 leading-tight">
+              <div className="text-xs font-bold text-white leading-tight">
                 {currentUser.name}
               </div>
-              <div className="text-[10px] text-slate-500 leading-tight">
+              <div className="text-[10px] text-sky-100 leading-tight">
                 {currentUser.role}
               </div>
             </div>
@@ -206,7 +202,7 @@ const DashboardContent: React.FC = () => {
                 resetToDefaults();
               }
             }}
-            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+            className="p-1.5 text-sky-200 hover:text-yellow-300 hover:bg-blue-800 rounded-lg transition-colors"
             title="استعادة البيانات الافتراضية"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -215,7 +211,7 @@ const DashboardContent: React.FC = () => {
       </header>
 
       {/* Main 6 Columns Container */}
-      <main className="flex-1 p-3 overflow-x-auto overflow-y-hidden scrollbar-thin">
+      <main className="flex-1 p-3 overflow-x-auto overflow-y-hidden scrollbar-thin bg-sky-50">
         <div
           dir="ltr"
           style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top left', width: `${100 / (zoomLevel / 100)}%` }}
