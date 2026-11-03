@@ -195,6 +195,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                   actions: Array.isArray(mtg.ticketsScreen?.actions) ? mtg.ticketsScreen.actions : [],
                 },
                 meetingReport: {
+                  ...(mtg.meetingReport || {}),
                   fileUrl: mtg.meetingReport?.fileUrl || null,
                   fileName: mtg.meetingReport?.fileName,
                   fileSize: mtg.meetingReport?.fileSize,
