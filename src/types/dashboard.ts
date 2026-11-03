@@ -66,6 +66,7 @@ export interface MeetingSession {
     reportRecipient?: string;
     departmentReports?: Record<string, { fileUrl: string; fileName?: string; fileSize?: string; uploadedAt?: string } | null>;
     qualityReport?: { fileUrl: string; fileName?: string; fileSize?: string; uploadedAt?: string } | null;
+    summaryReport?: { fileUrl: string; fileName?: string; fileSize?: string; uploadedAt?: string } | null;
   };
 }
 
