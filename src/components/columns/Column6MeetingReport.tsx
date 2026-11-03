@@ -56,29 +56,50 @@ export const Column6MeetingReport: React.FC = () => {
   const generateSummaryText = () => {
     const op = activeMeeting.overplannedNegotiation || { discussionNotes: '', actions: [] };
     const tk = activeMeeting.ticketsScreen || { discussionNotes: '', actions: [] };
-    const dur = activeMeeting.duration || { startDate: '', endDate: '' };
+    const dur = activeMeeting.duration || { startDate: '', endDate: '', notes: '' };
+    const taskScreen = activeMeeting.totalTasksScreen || { screenshotUrl: null };
+    const actionLines = (items: typeof op.actions) => items.map((action, index) => `  ${index + 1}. [${action.done ? 'Completed' : 'Pending'}] ${action.text} (Due: ${action.dueDate || '-'})`).join('\n') || '  No actions recorded';
+    const departments = (items?: string[]) => items?.join(', ') || 'None selected';
+    const departmentReports = departmentOptions.map((department) => {
+      const item = report.departmentReports?.[department];
+      return `  - ${department}: ${item?.fileName || 'No report uploaded'}`;
+    }).join('\n');
 
-    return `ملخص ميتينج مراجعة الأداء (${activeMeeting.title}) - منصة الخطة
---------------------------------------------------
-عضو الكواليتي: ${activeMember.name} (${activeMember.seniority || 'QA'} - ${activeMember.role})
-الفترة الزمنية: من ${dur.startDate || '25/9'} إلى ${dur.endDate || '26/10'}
-المستلم لمتابعة التنفيذ: ${recipient}
-حالة الاتفاق: تم الاتفاق على كافة الـ Actions وتم رفع التقرير لمتابعة التنفيذ.
+    return `QUALITY PERFORMANCE MEETING REPORT
+Meeting: ${activeMeeting.title}
+Member: ${activeMember.name}
+Role / Level: ${activeMember.role} / ${activeMember.seniority || 'QA'}
+Meeting completion date: ${activeMeeting.meetingDate || 'Not set'}
 
-1. أوفر بلاند نيجوشيشن (Overplanned Negotiation):
-- تم تدوين ${op.actions.length} Actions
-- تفاصيل النقاش: ${op.discussionNotes || 'لم تسجل ملاحظات'}
-- الأكشنز:
-${op.actions.map((a, i) => `  ${i + 1}. [${a.done ? 'مكتمل' : 'معلق'}] ${a.text} (الموعد: ${a.dueDate || '-'})`).join('\n') || '  لا توجد أكشنات'}
+COLUMN 2 — DURATION
+Start date: ${dur.startDate || '-'}
+End date: ${dur.endDate || '-'}
+Duration notes: ${dur.notes || 'No notes'}
 
-2. تيكتس سكرين (Tickets Screen):
-- تم تدوين ${tk.actions.length} Actions
-- تفاصيل النقاش: ${tk.discussionNotes || 'لم تسجل ملاحظات'}
-- الأكشنز:
-${tk.actions.map((a, i) => `  ${i + 1}. [${a.done ? 'مكتمل' : 'معلق'}] ${a.text} (الموعد: ${a.dueDate || '-'})`).join('\n') || '  لا توجد أكشنات'}
+COLUMN 3 — TOTAL TASKS SCREEN
+Screenshot: ${taskScreen.fileName || (taskScreen.screenshotUrl ? 'Screenshot attached' : 'No screenshot uploaded')}
+Upload time: ${taskScreen.uploadedAt || '-'}
 
-الملاحظات المرسلة للشخص:
-${report.notes || 'لا توجد ملاحظات إضافية'}
+COLUMN 4 — OVERPLANNED NEGOTIATION
+Quality Discussion:
+${op.discussionNotes || 'No discussion notes'}
+Quality Actions:
+${op.noAction ? 'No action will be taken' : actionLines(op.actions)}
+Departments Actions: ${departments(op.departmentsActions)}
+
+COLUMN 5 — TICKETS SCREEN
+Quality Discussion:
+${tk.discussionNotes || 'No discussion notes'}
+Quality Actions For Tickets:
+${tk.noAction ? 'No action will be taken' : actionLines(tk.actions)}
+Departments Actions: ${departments(tk.departmentsActions)}
+
+COLUMN 6 — MEETING REPORT
+Department reports:
+${departmentReports}
+General report file: ${report.fileName || 'No general report uploaded'}
+Closing notes:
+${report.notes || 'No additional notes'}
 `;
   };
 
