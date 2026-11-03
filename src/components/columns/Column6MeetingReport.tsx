@@ -8,13 +8,13 @@ export const Column6MeetingReport: React.FC = () => {
   const { activeMember, activeMeeting, updateMeetingReportNotes, updateDepartmentReport, updateQualityReport } = useDashboard();
   const [copied, setCopied] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState('Operation');
-  const selectedReport = departmentReports[selectedDepartment] || null;
-  const reportMarkedNone = selectedReport?.fileUrl === 'NO_REPORT';
   const [preview, setPreview] = useState<{ title: string; file: StoredFile } | null>(null);
   const [uploadError, setUploadError] = useState('');
   const departmentOptions = ['Operation', 'Data Entry', 'Video Edit', 'Technical'];
   const report = activeMeeting.meetingReport || { fileUrl: null };
   const departmentReports = report.departmentReports || {};
+  const selectedReport = departmentReports[selectedDepartment] || null;
+  const reportMarkedNone = selectedReport?.fileUrl === 'NO_REPORT';
   const qualityReport = report.qualityReport || null;
   const readFile = (file: File, save: (url: string, name: string, size: string) => void) => {
     setUploadError('');
