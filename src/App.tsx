@@ -202,7 +202,7 @@ const DashboardContent: React.FC = () => {
       </header>
 
       {/* Main 6 Columns Container */}
-      <main ref={mainScrollRef} onScroll={() => syncHorizontalScroll('main')} className="flex-1 p-3 overflow-x-auto overflow-y-hidden scrollbar-thin">
+      <main ref={mainScrollRef} onScroll={() => syncHorizontalScroll('main')} className="flex-none h-[calc(100vh-150px)] min-h-0 p-3 overflow-x-auto overflow-y-hidden scrollbar-thin">
         <div
           dir="ltr"
           style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top left', width: `${100 / (zoomLevel / 100)}%` }}
@@ -243,7 +243,7 @@ const DashboardContent: React.FC = () => {
       </main>
 
       {members.length > 0 && (
-        <div ref={bottomScrollRef} onScroll={() => syncHorizontalScroll('bottom')} aria-label="Dashboard horizontal navigation" className="h-5 shrink-0 overflow-x-auto overflow-y-hidden border-t border-slate-200 bg-slate-100 scrollbar-thin">
+        <div ref={bottomScrollRef} onScroll={() => syncHorizontalScroll('bottom')} aria-label="Dashboard horizontal navigation" className="mx-3 mb-2 h-5 shrink-0 overflow-x-auto overflow-y-hidden rounded border border-slate-300 bg-slate-100 scrollbar-thin">
           <div className="h-1 w-[1985px]" />
         </div>
       )}
