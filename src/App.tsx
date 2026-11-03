@@ -202,7 +202,7 @@ const DashboardContent: React.FC = () => {
       </header>
 
       {/* Main 6 Columns Container */}
-      <main ref={mainScrollRef} onScroll={() => syncHorizontalScroll('main')} className="flex-none h-[calc(100vh-150px)] min-h-0 p-3 overflow-x-auto overflow-y-hidden scrollbar-thin">
+      <main ref={mainScrollRef} onScroll={() => syncHorizontalScroll('main')} className="flex-none h-[calc(100vh-150px)] min-h-0 p-3 overflow-x-hidden overflow-y-hidden">
         <div
           dir="ltr"
           style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top left', width: `${100 / (zoomLevel / 100)}%` }}
