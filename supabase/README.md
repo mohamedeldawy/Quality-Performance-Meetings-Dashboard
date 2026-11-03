@@ -8,9 +8,9 @@ Run `schema.sql` in the Supabase SQL Editor.
 
 ## Edge Function environment secrets
 
-In Supabase Dashboard → Project Settings → Edge Functions → Secrets, configure `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SESSION_SECRET`, `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_NAME`, and `INITIAL_ADMIN_PASSWORD`.
+In Supabase Dashboard → Edge Functions → Secrets, add these custom secrets: `SESSION_SECRET`, `INITIAL_ADMIN_USERNAME`, `INITIAL_ADMIN_NAME`, and `INITIAL_ADMIN_PASSWORD`. Supabase injects `SUPABASE_URL` and `SUPABASE_SECRET_KEYS` automatically; the function reads the default Secret key from the injected `SUPABASE_SECRET_KEYS` map.
 
-Use the project URL `https://gexpautvhgwscujyhdhr.supabase.co`, username `Dawy`, and display name `Mohamed Eldawy`. Set a new private password of at least 12 characters. Use the random session secret already generated locally. Never put the Secret key, session secret, or admin password in GitHub source or browser variables.
+Use the project URL `https://gexpautvhgwscujyhdhr.supabase.co`, username `Dawy`, and display name `Mohamed Eldawy`. Set a new private password of at least 12 characters. Use the random session secret already generated locally. Never put the Secret key, session secret, or admin password in GitHub source or browser variables. Do not try to create custom secrets with names beginning `SUPABASE_`; that prefix is reserved by Supabase.
 
 ## Deploy function
 
