@@ -7,7 +7,14 @@ const corsHeaders = {
 };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-const SUPABASE_SECRET_KEY = Deno.env.get("SUPABASE_SECRET_KEY") ?? "";
+const SUPABASE_SECRET_KEY = (() => {
+  try {
+    const keys = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") ?? "{}");
+    return keys.default ?? "";
+  } catch {
+    return "";
+  }
+})();
 const SESSION_SECRET = Deno.env.get("SESSION_SECRET") ?? "";
 const INITIAL_ADMIN_PASSWORD = Deno.env.get("INITIAL_ADMIN_PASSWORD") ?? "";
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
