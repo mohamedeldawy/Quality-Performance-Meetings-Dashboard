@@ -504,10 +504,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const existing = users.find((u) => u.id === id);
     if (!existing) return;
     const user = { ...existing, ...updates };
-    const res = await fetch('/api/users', {
-      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user }),
-    });
+    const res = await apiRequest('users-save', { user });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'تعذر تحديث المستخدم');
     setUsers(data.users || []);
