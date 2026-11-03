@@ -1,23 +1,4 @@
-import { QualityMemberReview, AppUser, MeetingSession } from '../types/dashboard';
-
-export const INITIAL_USERS: AppUser[] = [
-  {
-    id: 'user-manager',
-    username: 'dawy',
-    password: 'password123',
-    name: 'مدير الكواليتي (أحمد ضوي)',
-    role: 'Quality Manager',
-    color: 'bg-indigo-600',
-  },
-  {
-    id: 'user-radwa',
-    username: 'radwa',
-    password: 'radwa123',
-    name: 'أ/ رضوى',
-    role: 'Senior Quality',
-    color: 'bg-emerald-600',
-  },
-];
+import { QualityMemberReview, MeetingSession } from '../types/dashboard';
 
 const sampleMeeting1: MeetingSession = {
   id: 'mtg-1',
