@@ -5,16 +5,17 @@ import { FileText, Copy, Check, Printer, Trash2, Eye, Upload } from 'lucide-reac
 type StoredFile = { fileUrl: string; fileName?: string; fileSize?: string; uploadedAt?: string };
 
 export const Column6MeetingReport: React.FC = () => {
-  const { activeMember, activeMeeting, updateMeetingReportNotes, updateDepartmentReport, updateQualityReport, updateSummaryReport } = useDashboard();
+  const { activeMember, activeMeeting, updateMeetingReportNotes, updateDepartmentReport, updateQualityReport } = useDashboard();
   const [copied, setCopied] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState('Operation');
+  const selectedReport = departmentReports[selectedDepartment] || null;
+  const reportMarkedNone = selectedReport?.fileUrl === 'NO_REPORT';
   const [preview, setPreview] = useState<{ title: string; file: StoredFile } | null>(null);
   const [uploadError, setUploadError] = useState('');
   const departmentOptions = ['Operation', 'Data Entry', 'Video Edit', 'Technical'];
   const report = activeMeeting.meetingReport || { fileUrl: null };
   const departmentReports = report.departmentReports || {};
   const qualityReport = report.qualityReport || null;
-  const summaryReport = report.summaryReport || null;
   const readFile = (file: File, save: (url: string, name: string, size: string) => void) => {
     setUploadError('');
     if (file.size > 4 * 1024 * 1024) {
@@ -90,23 +91,22 @@ Closing Notes: ${report.notes || 'None'}`;
           <h3 className="text-xs font-bold text-indigo-950">Departments Report</h3>
           <label className="block text-[11px] font-semibold text-slate-700">Select department</label>
           <select value={selectedDepartment} onChange={(event) => setSelectedDepartment(event.target.value)} className="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs">{departmentOptions.map((department) => <option key={department} value={department}>{department}</option>)}</select>
-          {renderUpload(`${selectedDepartment} Report`, departmentReports[selectedDepartment] || null, (url, name, size) => updateDepartmentReport(selectedDepartment, url, name, size), () => updateDepartmentReport(selectedDepartment, null))}
-          <div className="space-y-1">{departmentOptions.map((department) => { const item = departmentReports[department]; return <div key={department} className="flex justify-between gap-2 text-[10px] text-slate-600"><span>{department}</span><span className={item ? 'font-semibold text-emerald-700' : 'text-slate-400'}>{item?.fileName || 'No file attached'}</span></div>; })}</div>
+          <label className="flex items-center gap-2 text-xs font-semibold text-slate-700"><input type="checkbox" checked={!!reportMarkedNone} onChange={(event) => updateDepartmentReport(selectedDepartment, event.target.checked ? 'NO_REPORT' : null, event.target.checked ? 'لا يوجد' : undefined)} className="rounded" /> لا يوجد تقرير لهذا القسم</label>{!reportMarkedNone && renderUpload(`${selectedDepartment} Report`, selectedReport, (url, name, size) => updateDepartmentReport(selectedDepartment, url, name, size), () => updateDepartmentReport(selectedDepartment, null))}
+          <div className="space-y-1">{departmentOptions.map((department) => { const item = departmentReports[department]; return <div key={department} className="flex justify-between gap-2 text-[10px] text-slate-600"><span>{department}</span><span className={item ? 'font-semibold text-emerald-700' : 'text-slate-400'}>{item?.fileUrl === 'NO_REPORT' ? 'لا يوجد' : item?.fileName || 'No file attached'}</span></div>; })}</div>
         </section>
         <section className="space-y-2 rounded-xl border border-purple-200 bg-purple-50/40 p-3">
           <h3 className="text-xs font-bold text-purple-950">Quality Report</h3>
           {renderUpload('Quality Report File', qualityReport, (url, name, size) => updateQualityReport(url, name, size), () => updateQualityReport(null))}
         </section>
         {uploadError && <p className="rounded-lg bg-rose-50 p-2 text-[11px] text-rose-700">{uploadError}</p>}
-        <section className="space-y-2 rounded-xl border border-sky-200 bg-sky-50/50 p-3"><h3 className="text-xs font-bold text-sky-950">Meeting Summary</h3>{renderUpload('Meeting Summary File', summaryReport, (url, name, size) => updateSummaryReport(url, name, size), () => updateSummaryReport(null))}</section>
         <section className="space-y-2 border-t border-slate-200 pt-3">
-          <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-xs font-bold text-slate-800">Meeting Summary</h3><div className="flex gap-1.5"><button type="button" onClick={handleExport} className="rounded bg-indigo-700 px-2.5 py-1 text-[11px] font-semibold text-white">Export HTML</button><button type="button" onClick={copySummary} className="flex items-center gap-1 rounded bg-slate-900 px-2.5 py-1 text-[11px] text-white">{copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}{copied ? 'Copied' : 'Copy'}</button><button type="button" onClick={() => window.print()} className="rounded bg-slate-100 p-1 text-slate-700"><Printer className="h-3.5 w-3.5" /></button></div></div>
+          <div className="flex flex-wrap items-center justify-between gap-2"><div className="flex gap-1.5"><button type="button" onClick={handleExport} className="rounded bg-indigo-700 px-2.5 py-1 text-[11px] font-semibold text-white">Export HTML</button><button type="button" onClick={copySummary} className="flex items-center gap-1 rounded bg-slate-900 px-2.5 py-1 text-[11px] text-white">{copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}{copied ? 'Copied' : 'Copy'}</button><button type="button" onClick={() => window.print()} className="rounded bg-slate-100 p-1 text-slate-700"><Printer className="h-3.5 w-3.5" /></button></div></div>
 
         </section>
         <section className="space-y-1"><label className="text-xs font-bold text-slate-800">Closing Notes</label><textarea rows={3} value={report.notes || ''} onChange={(event) => updateMeetingReportNotes(event.target.value)} placeholder="Enter final meeting notes..." className="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-purple-500" /></section>
       </div>
       <div className="shrink-0 border-t border-purple-100 bg-purple-50/50 p-2 text-center text-[10px] text-purple-950">{Object.values(departmentReports).filter(Boolean).length} Department Reports · {qualityReport ? 'Quality Report attached' : 'No Quality Report'}</div>
-      {preview && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-4" role="dialog" aria-modal="true" aria-label="File preview"><div className="flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"><div className="flex items-center justify-between border-b p-3"><div className="truncate text-xs font-bold text-slate-800">{preview.title} · {preview.file.fileName}</div><button type="button" onClick={() => setPreview(null)} className="rounded bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">Close</button></div><div className="min-h-0 flex-1 bg-slate-100">{preview.file.fileUrl.startsWith('data:application/pdf') ? <iframe title="Report PDF preview" src={preview.file.fileUrl} className="h-full w-full" /> : preview.file.fileUrl.startsWith('data:image/') ? <img src={preview.file.fileUrl} alt="Uploaded report preview" className="h-full w-full object-contain" /> : <div className="flex h-full flex-col items-center justify-center gap-3 text-sm text-slate-600"><FileText className="h-10 w-10" />Preview is available for PDF and image files. Download this file to open it in its native application.</div>}</div></div></div>}
+      {preview && <div className="fixed inset-0 z-[100] flex items-stretch justify-stretch bg-slate-900/90 p-0" role="dialog" aria-modal="true" aria-label="File preview"><div className="flex h-[100dvh] w-full flex-col overflow-hidden bg-white shadow-none"><div className="flex items-center justify-between border-b p-3"><div className="truncate text-xs font-bold text-slate-800">{preview.title} · {preview.file.fileName}</div><button type="button" onClick={() => setPreview(null)} className="rounded bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">Close</button></div><div className="min-h-0 flex-1 bg-white">{preview.file.fileUrl.startsWith('data:application/pdf') ? <iframe title="Report PDF preview" src={preview.file.fileUrl} className="h-full w-full" /> : preview.file.fileUrl.startsWith('data:image/') ? <img src={preview.file.fileUrl} alt="Uploaded report preview" className="h-full w-full object-contain" /> : <div className="flex h-full flex-col items-center justify-center gap-3 text-sm text-slate-600"><FileText className="h-10 w-10" />Preview is available for PDF and image files. Download this file to open it in its native application.</div>}</div></div></div>}
     </div>
   );
 };
