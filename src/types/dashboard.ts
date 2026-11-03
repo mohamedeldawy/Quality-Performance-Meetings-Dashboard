@@ -6,6 +6,8 @@ export interface ActionItem {
   createdBy?: string;
 }
 
+export interface DepartmentActionItem extends ActionItem { department: string; }
+
 export interface AppUser {
   id: string;
   username: string;
@@ -41,7 +43,7 @@ export interface MeetingSession {
   overplannedNegotiation: {
     discussionNotes: string;
     actions: ActionItem[];
-    departmentsActions?: string[];
+    departmentsActions?: DepartmentActionItem[];
     noAction?: boolean;
   };
 
@@ -50,7 +52,7 @@ export interface MeetingSession {
     discussionNotes: string;
     actions: ActionItem[];
     screenshotUrl?: string | null;
-    departmentsActions?: string[];
+    departmentsActions?: DepartmentActionItem[];
     noAction?: boolean;
   };
 
@@ -63,6 +65,7 @@ export interface MeetingSession {
     notes?: string;
     reportRecipient?: string;
     departmentReports?: Record<string, { fileUrl: string; fileName?: string; fileSize?: string; uploadedAt?: string } | null>;
+    qualityReport?: { fileUrl: string; fileName?: string; fileSize?: string; uploadedAt?: string } | null;
   };
 }
 
