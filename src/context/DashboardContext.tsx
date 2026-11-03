@@ -508,7 +508,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'تعذر تحديث المستخدم');
     setUsers(data.users || []);
-    if (currentUser?.id === id) setCurrentUser(user);
+    if (currentUser?.id === id) setCurrentUser((data.users || []).find((u: AppUser) => u.id === id) || null);
   };
 
   const deleteUser = async (id: string) => {
