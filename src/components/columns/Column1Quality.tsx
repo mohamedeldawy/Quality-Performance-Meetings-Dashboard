@@ -91,7 +91,7 @@ const prepareMemberImage = (file: File): Promise<string> =>
     reader.onload = () => {
       const image = new Image();
       image.onload = () => {
-        const scale = Math.min(1, 480 / Math.max(image.width, image.height));
+        const scale = Math.min(1, 320 / Math.max(image.width, image.height));
         const canvas = document.createElement('canvas');
         canvas.width = Math.max(1, Math.round(image.width * scale));
         canvas.height = Math.max(1, Math.round(image.height * scale));
@@ -101,7 +101,7 @@ const prepareMemberImage = (file: File): Promise<string> =>
           return;
         }
         context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.78));
+        resolve(canvas.toDataURL('image/jpeg', 0.62));
       };
       image.onerror = () => reject(new Error('تعذر قراءة الصورة'));
       image.src = String(reader.result);
@@ -389,14 +389,13 @@ export const Column1Quality: React.FC = () => {
                   />
                 </label>
                 {memberForm.photoUrl && (
-                  <button
-                    type="button"
-                    onClick={() => setMemberForm({ ...memberForm, photoUrl: '' })}
-                    className="mt-1 text-[10px] text-rose-600 hover:text-rose-700"
-                  >
-                    إزالة الصورة
-                  </button>
+                  <div className="mt-2 flex items-center gap-2 rounded-lg border border-blue-200 bg-white p-2">
+                    <img src={memberForm.photoUrl} alt="Member photo preview" className="h-12 w-12 rounded-full border border-slate-200 object-cover" />
+                    <span className="text-[10px] font-semibold text-emerald-700">Image ready to save</span>
+                    <button type="button" onClick={() => setMemberForm((current) => ({ ...current, photoUrl: '' }))} className="text-[10px] text-rose-600 hover:text-rose-700">Remove</button>
+                  </div>
                 )}
+                {imageError && <p className="text-[10px] font-semibold text-rose-600">{imageError}</p>}
               </div>
             </div>
             {imageError && <p className="text-[10px] text-rose-600">{imageError}</p>}
