@@ -118,6 +118,7 @@ export const Column1Quality: React.FC = () => {
     activeMember,
     activeMeeting,
     setActiveMeetingId,
+    updateMeetingDate,
     addMember,
     updateMember,
     deleteMember,
@@ -601,6 +602,14 @@ export const Column1Quality: React.FC = () => {
                 );
               })
             )}
+          </div>
+        )}
+
+        {members.length > 0 && activeMember && activeMeeting && (
+          <div className="p-2.5 rounded-lg border border-indigo-200 bg-indigo-50/70 space-y-1">
+            <label className="block text-[11px] font-bold text-indigo-950">Meeting completion date</label>
+            <input type="date" value={activeMeeting.meetingDate || ''} onChange={(event) => updateMeetingDate(event.target.value)} className="w-full rounded border border-indigo-200 bg-white p-2 text-xs font-mono" />
+            <p className="text-[10px] text-slate-500">التاريخ ده خاص بانتهاء الاجتماع، ومش مرتبط بفترة الـ Duration.</p>
           </div>
         )}
 
