@@ -89,7 +89,7 @@ export const Column2Duration: React.FC = () => {
         <div className="space-y-1">
           <label className="block text-xs font-bold text-slate-800 flex items-center gap-1">
             <Info className="w-3.5 h-3.5 text-sky-600" />
-            <span>ملاحظات الدورة أو السبرنت:</span>
+            <span>Duration notes:</span>
           </label>
           <textarea
             rows={4}
