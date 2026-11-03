@@ -47,7 +47,6 @@ const sampleMeeting1: MeetingSession = {
   },
   meetingReport: {
     fileUrl: null,
-    reportRecipient: 'أحمد',
     notes: 'تم الاتفاق على كافة الـ Actions وتم رفع التقرير لمتابعة التنفيذ.',
   },
 };
