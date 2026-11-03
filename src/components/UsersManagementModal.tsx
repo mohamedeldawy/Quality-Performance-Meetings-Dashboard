@@ -58,7 +58,12 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
       return;
     }
 
-    await addUser(name.trim(), username.trim(), password.trim(), role.trim(), newPhotoUrl);
+    try {
+      await addUser(name.trim(), username.trim(), password.trim(), role.trim(), newPhotoUrl);
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : 'تعذر حفظ المستخدم.');
+      return;
+    }
     setName('');
     setUsername('');
     setPassword('');
@@ -81,13 +86,18 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
       return;
     }
 
-    await updateUser(userId, {
+    try {
+      await updateUser(userId, {
       name: nameValue,
       username: usernameValue,
       ...(passwordValue ? { password: passwordValue } : {}),
       role: roleValue,
       photoUrl: editValues.photoUrl,
-    });
+      });
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : 'تعذر تحديث المستخدم.');
+      return;
+    }
     setEditingUserId(null);
     setStatusMessage('تم تحديث بيانات المستخدم بنجاح!');
     setTimeout(() => setStatusMessage(null), 3000);
