@@ -1,5 +1,5 @@
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const FUNCTION_URL = SUPABASE_URL ? \`\${SUPABASE_URL.replace(/\/$/, "")}/functions/v1/dashboard\` : "";
+const FUNCTION_URL = SUPABASE_URL ? SUPABASE_URL.replace(/\/$/, "") + "/functions/v1/dashboard" : "";
 const TOKEN_KEY = "qpd_access_token";
 
 export function saveAccessToken(token: string) {
@@ -17,7 +17,7 @@ export async function apiRequest(action: string, payload: Record<string, unknown
     headers: {
       "Content-Type": "application/json",
       ...(publishableKey ? { apikey: publishableKey } : {}),
-      ...(authenticated && token ? { Authorization: \`Bearer \${token}\` } : {}),
+      ...(authenticated && token ? { Authorization: "Bearer " + token } : {}),
     },
     body: JSON.stringify({ action, ...payload }),
   });
