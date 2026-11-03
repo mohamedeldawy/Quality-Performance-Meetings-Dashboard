@@ -62,7 +62,7 @@ export interface MeetingSession {
     uploadedAt?: string;
     notes?: string;
     reportRecipient?: string;
-    departmentReports?: Record<string, { fileUrl: string | null; fileName?: string; fileSize?: string; uploadedAt?: string }>;
+    departmentReports?: Record<string, { fileUrl: string; fileName?: string; fileSize?: string; uploadedAt?: string } | null>;
   };
 }
 
