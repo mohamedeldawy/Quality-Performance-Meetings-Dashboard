@@ -21,6 +21,7 @@ export interface MeetingSession {
   title: string; // e.g. "Meeting 1", "Meeting 2"
   createdAt: string;
   createdBy?: string;
+  meetingDate?: string;
 
   // 2. Duration
   duration: {
@@ -40,6 +41,8 @@ export interface MeetingSession {
   overplannedNegotiation: {
     discussionNotes: string;
     actions: ActionItem[];
+    departmentsActions?: string[];
+    noAction?: boolean;
   };
 
   // 5. Tickets Screen
@@ -47,6 +50,8 @@ export interface MeetingSession {
     discussionNotes: string;
     actions: ActionItem[];
     screenshotUrl?: string | null;
+    departmentsActions?: string[];
+    noAction?: boolean;
   };
 
   // 6. Meeting Report
@@ -56,7 +61,8 @@ export interface MeetingSession {
     fileSize?: string;
     uploadedAt?: string;
     notes?: string;
-    reportRecipient?: string; // e.g. "أحمد" or "محمد"
+    reportRecipient?: string;
+    departmentReports?: Record<string, { fileUrl: string | null; fileName?: string; fileSize?: string; uploadedAt?: string }>;
   };
 }
 
