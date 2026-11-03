@@ -708,7 +708,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch {
       setMembers(INITIAL_MEMBERS);
       setActiveMemberId(INITIAL_MEMBERS[0].id);
-      setUsers(INITIAL_USERS);
+      setUsers([]);
     }
     try {
       localStorage.removeItem(STORAGE_KEY);
