@@ -12,7 +12,6 @@ import {
   Users,
   LogOut,
   RefreshCw,
-  RotateCcw,
   ZoomIn,
   ZoomOut,
   Sparkles,
@@ -29,7 +28,6 @@ const DashboardContent: React.FC = () => {
     lastUpdatedBy,
     lastUpdatedAt,
     refreshFromServer,
-    resetToDefaults,
   } = useDashboard();
 
   const [showUsersModal, setShowUsersModal] = useState(false);
@@ -196,20 +194,6 @@ const DashboardContent: React.FC = () => {
           >
             <LogOut className="w-3.5 h-3.5 rotate-180" />
             <span>خروج</span>
-          </button>
-
-          {/* Reset to defaults (accessible by manager) */}
-          <button
-            type="button"
-            onClick={() => {
-              if (window.confirm('هل تريد استعادة البيانات الافتراضية للداشبورد؟')) {
-                resetToDefaults();
-              }
-            }}
-            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-            title="استعادة البيانات الافتراضية"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
           </button>
         </div>
       </header>
