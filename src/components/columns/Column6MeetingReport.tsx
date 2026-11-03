@@ -1,225 +1,110 @@
 import React, { useState } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
-import {
-  FileText,
-  Trash2,
-  Copy,
-  Check,
-  Printer,
-  Send,
-  User,
-  CheckCircle,
-} from 'lucide-react';
+import { FileText, Copy, Check, Printer, Trash2, Eye, Upload } from 'lucide-react';
+
+type StoredFile = { fileUrl: string; fileName?: string; fileSize?: string; uploadedAt?: string };
 
 export const Column6MeetingReport: React.FC = () => {
-  const {
-    activeMember,
-    activeMeeting,
-    updateMeetingReportFile,
-    updateMeetingReportNotes,
-    updateDepartmentReport,
-  } = useDashboard();
-
+  const { activeMember, activeMeeting, updateMeetingReportNotes, updateDepartmentReport, updateQualityReport } = useDashboard();
   const [copied, setCopied] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState('Operation');
+  const [preview, setPreview] = useState<{ title: string; file: StoredFile } | null>(null);
+  const [uploadError, setUploadError] = useState('');
   const departmentOptions = ['Operation', 'Data Entry', 'Video Edit', 'Technical'];
-
   const report = activeMeeting.meetingReport || { fileUrl: null };
-
-  const opActions = activeMeeting.overplannedNegotiation?.actions || [];
-  const tkActions = activeMeeting.ticketsScreen?.actions || [];
-
-
+  const departmentReports = report.departmentReports || {};
+  const qualityReport = report.qualityReport || null;
+  const readFile = (file: File, save: (url: string, name: string, size: string) => void) => {
+    setUploadError('');
+    if (file.size > 4 * 1024 * 1024) {
+      setUploadError('File is larger than 4 MB. Please compress it before uploading.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') save(reader.result, file.name, (file.size / 1024).toFixed(1) + ' KB');
+      else setUploadError('Could not read this file. Please try again.');
+    };
+    reader.onerror = () => setUploadError('Could not read this file. Please try again.');
+    reader.readAsDataURL(file);
+  };
   const generateSummaryText = () => {
     const op = activeMeeting.overplannedNegotiation || { discussionNotes: '', actions: [] };
     const tk = activeMeeting.ticketsScreen || { discussionNotes: '', actions: [] };
-    const dur = activeMeeting.duration || { startDate: '', endDate: '', notes: '' };
-    const taskScreen = activeMeeting.totalTasksScreen || { screenshotUrl: null };
-    const actionLines = (items: typeof op.actions) => items.map((action, index) => `  ${index + 1}. [${action.done ? 'Completed' : 'Pending'}] ${action.text} (Due: ${action.dueDate || '-'})`).join('\n') || '  No actions recorded';
-    const departments = (items?: string[]) => items?.join(', ') || 'None selected';
-    const departmentReports = departmentOptions.map((department) => {
-      const item = report.departmentReports?.[department];
-      return `  - ${department}: ${item?.fileName || 'No report uploaded'}`;
-    }).join('\n');
-
+    const actionLines = (items: any[]) => items.map((item, index) => `  ${index + 1}. [${item.done ? 'Completed' : 'Pending'}] ${item.text} (Due: ${item.dueDate || '-'})`).join('\n') || '  No actions recorded';
+    const deptLines = (items: any[]) => items.map((item) => `  - ${item.department}: due ${item.dueDate || '-'}`).join('\n') || '  None';
     return `QUALITY PERFORMANCE MEETING REPORT
 Meeting: ${activeMeeting.title}
 Member: ${activeMember.name}
-Role / Level: ${activeMember.role} / ${activeMember.seniority || 'QA'}
 Meeting completion date: ${activeMeeting.meetingDate || 'Not set'}
 
-COLUMN 2 — DURATION
-Start date: ${dur.startDate || '-'}
-End date: ${dur.endDate || '-'}
-Duration notes: ${dur.notes || 'No notes'}
+OVERPLANNED NEGOTIATION
+Quality Discussion: ${op.discussionNotes || 'None'}
+Quality Actions: ${op.noAction ? 'No action will be taken' : actionLines(op.actions || [])}
+Departments Actions:
+${deptLines(op.departmentsActions || [])}
 
-COLUMN 3 — TOTAL TASKS SCREEN
-Screenshot: ${taskScreen.fileName || (taskScreen.screenshotUrl ? 'Screenshot attached' : 'No screenshot uploaded')}
-Upload time: ${taskScreen.uploadedAt || '-'}
+TICKETS SCREEN
+Quality Discussion: ${tk.discussionNotes || 'None'}
+Quality Actions: ${tk.noAction ? 'No action will be taken' : actionLines(tk.actions || [])}
+Departments Actions:
+${deptLines(tk.departmentsActions || [])}
 
-COLUMN 4 — OVERPLANNED NEGOTIATION
-Quality Discussion:
-${op.discussionNotes || 'No discussion notes'}
-Quality Actions:
-${op.noAction ? 'No action will be taken' : actionLines(op.actions)}
-Departments Actions: ${departments(op.departmentsActions)}
-
-COLUMN 5 — TICKETS SCREEN
-Quality Discussion:
-${tk.discussionNotes || 'No discussion notes'}
-Quality Actions For Tickets:
-${tk.noAction ? 'No action will be taken' : actionLines(tk.actions)}
-Departments Actions: ${departments(tk.departmentsActions)}
-
-COLUMN 6 — MEETING REPORT
-Department reports:
-${departmentReports}
-General report file: ${report.fileName || 'No general report uploaded'}
-Closing notes:
-${report.notes || 'No additional notes'}
-`;
+MEETING REPORT
+Departments Reports:
+${departmentOptions.map((department) => `  - ${department}: ${departmentReports[department]?.fileName || 'No file'}`).join('\n')}
+Quality Report: ${qualityReport?.fileName || 'No file'}
+Closing Notes: ${report.notes || 'None'}`;
   };
-
-  const handleExportHtml = () => {
-    const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char] || char));
-    const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(activeMeeting.title)} - Quality Meeting Report</title><style>body{font-family:Arial,sans-serif;max-width:1000px;margin:32px auto;padding:0 20px;color:#172033;line-height:1.6}h1,h2{color:#172554}section{border:1px solid #cbd5e1;border-radius:12px;padding:18px;margin:16px 0;break-inside:avoid}pre{white-space:pre-wrap;font:inherit}.meta{color:#475569}</style></head><body><h1>Quality Meeting Report</h1><p class="meta">${escapeHtml(activeMember.name)} · ${escapeHtml(activeMeeting.title)} · ${escapeHtml(activeMeeting.meetingDate || 'Meeting date not set')}</p><section><h2>Complete Meeting Details</h2><pre>${escapeHtml(generateSummaryText())}</pre></section><section><h2>Departments Actions</h2><p>Overplanned: ${escapeHtml((activeMeeting.overplannedNegotiation?.departmentsActions || []).join(', ') || 'None')}</p><p>Tickets: ${escapeHtml((activeMeeting.ticketsScreen?.departmentsActions || []).join(', ') || 'None')}</p></section><section><h2>Department Reports</h2>${departmentOptions.map((department) => { const item = report.departmentReports?.[department]; return '<p><strong>' + escapeHtml(department) + ':</strong> ' + (item?.fileUrl ? '<a download="' + escapeHtml(item.fileName || department + '_report') + '" href="' + escapeHtml(item.fileUrl) + '">' + escapeHtml(item.fileName || 'Download report') + '</a>' : 'No report uploaded') + '</p>'; }).join('')}</section>${activeMeeting.totalTasksScreen?.screenshotUrl ? '<section><h2>Total Tasks Screenshot</h2><img alt="Total Tasks Screenshot" style="max-width:100%;height:auto" src="' + escapeHtml(activeMeeting.totalTasksScreen.screenshotUrl) + '"></section>' : ''}</body></html>`;
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `${activeMember.name.replace(/[^a-z0-9-_]/gi, '_')}_${activeMeeting.title.replace(/[^a-z0-9-_]/gi, '_')}_report.html`; link.click(); window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const handleExport = () => {
+    const escape = (value: string) => value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char] || char));
+    const reportLinks = departmentOptions.map((department) => {
+      const item = departmentReports[department];
+      return item?.fileUrl ? `<p>${escape(department)}: <a href="${item.fileUrl}" download="${escape(item.fileName || department)}">${escape(item.fileName || 'Download')}</a></p>` : `<p>${escape(department)}: No report uploaded</p>`;
+    }).join('');
+    const qualityLink = qualityReport?.fileUrl ? `<p><a href="${qualityReport.fileUrl}" download="${escape(qualityReport.fileName || 'quality-report')}">${escape(qualityReport.fileName || 'Quality Report')}</a></p>` : '<p>No quality report uploaded</p>';
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Quality Meeting Report</title><style>body{font:14px Arial;max-width:1000px;margin:32px auto;padding:0 20px;color:#172033;line-height:1.6}h1,h2{color:#172554}section{border:1px solid #cbd5e1;border-radius:12px;padding:18px;margin:16px 0}pre{white-space:pre-wrap;font:inherit}</style></head><body><h1>Quality Meeting Report</h1><p>${escape(activeMember.name)} · ${escape(activeMeeting.title)} · ${escape(activeMeeting.meetingDate || 'Date not set')}</p><section><h2>Complete Meeting Details</h2><pre>${escape(generateSummaryText())}</pre></section><section><h2>Departments Reports</h2>${reportLinks}</section><section><h2>Quality Report</h2>${qualityLink}</section></body></html>`;
+    const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
+    const link = document.createElement('a'); link.href = url; link.download = 'quality-meeting-report.html'; link.click(); URL.revokeObjectURL(url);
   };
-
-  const handleCopySummary = () => {
-    navigator.clipboard.writeText(generateSummaryText()).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+  const copySummary = async () => {
+    await navigator.clipboard.writeText(generateSummaryText()); setCopied(true); window.setTimeout(() => setCopied(false), 1800);
   };
-
+  const renderUpload = (title: string, file: StoredFile | null, save: (url: string, name: string, size: string) => void, remove: () => void) => (
+    <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+      <div className="text-xs font-bold text-slate-800">{title}</div>
+      <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-indigo-300 bg-indigo-50 p-3 text-xs font-semibold text-indigo-800 hover:bg-indigo-100">
+        <Upload className="h-4 w-4" /> {file ? 'Replace file' : 'Upload / Attach file'}
+        <input type="file" accept=".pdf,application/pdf,image/*,.doc,.docx,.xls,.xlsx" className="sr-only" onChange={(event) => { const selected = event.target.files?.[0]; if (selected) readFile(selected, save); event.target.value = ''; }} />
+      </label>
+      {file && <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 p-2 text-[11px]"><span className="min-w-0 flex-1 truncate font-semibold text-slate-700">{file.fileName} <span className="font-normal text-slate-400">({file.fileSize || ''})</span></span><button type="button" onClick={() => setPreview({ title, file })} className="flex items-center gap-1 rounded bg-blue-700 px-2 py-1 text-white"><Eye className="h-3 w-3" /> Preview</button><button type="button" onClick={remove} className="text-rose-600"><Trash2 className="h-3.5 w-3.5" /></button></div>}
+    </div>
+  );
   return (
-    <div className="flex flex-col h-full bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden">
-      {/* Column Header (Purple / Violet Slate Theme) */}
-      <div className="p-3 bg-gradient-to-r from-blue-950 via-slate-950 to-blue-900 text-white flex items-center justify-between border-b border-amber-400/80 shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-[11px] font-mono font-bold shadow-xs">
-            6
-          </span>
-          <h2 className="text-xs font-bold tracking-wide">Meeting Report</h2>
-        </div>
-
+    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-blue-200 bg-white shadow-sm">
+      <div className="shrink-0 border-b border-amber-400/80 bg-gradient-to-r from-blue-950 via-slate-950 to-blue-900 p-3 text-white"><div className="flex items-center gap-2"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-[11px] font-bold text-slate-950">6</span><h2 className="text-xs font-bold">Meeting Report</h2></div></div>
+      <div className="shrink-0 border-b border-blue-100 bg-blue-50/90 px-3 py-1.5 text-[10px] font-semibold text-blue-950">Department Reports & Quality Report</div>
+      <div className="flex-1 space-y-3.5 overflow-y-auto p-3" dir="rtl">
+        <section className="space-y-2 rounded-xl border border-indigo-200 bg-indigo-50/40 p-3">
+          <h3 className="text-xs font-bold text-indigo-950">Departments Report</h3>
+          <label className="block text-[11px] font-semibold text-slate-700">Select department</label>
+          <select value={selectedDepartment} onChange={(event) => setSelectedDepartment(event.target.value)} className="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs">{departmentOptions.map((department) => <option key={department} value={department}>{department}</option>)}</select>
+          {renderUpload(`${selectedDepartment} Report`, departmentReports[selectedDepartment] || null, (url, name, size) => updateDepartmentReport(selectedDepartment, url, name, size), () => updateDepartmentReport(selectedDepartment, null))}
+          <div className="space-y-1">{departmentOptions.map((department) => { const item = departmentReports[department]; return <div key={department} className="flex justify-between gap-2 text-[10px] text-slate-600"><span>{department}</span><span className={item ? 'font-semibold text-emerald-700' : 'text-slate-400'}>{item?.fileName || 'No file attached'}</span></div>; })}</div>
+        </section>
+        <section className="space-y-2 rounded-xl border border-purple-200 bg-purple-50/40 p-3">
+          <h3 className="text-xs font-bold text-purple-950">Quality Report</h3>
+          {renderUpload('Quality Report File', qualityReport, (url, name, size) => updateQualityReport(url, name, size), () => updateQualityReport(null))}
+        </section>
+        {uploadError && <p className="rounded-lg bg-rose-50 p-2 text-[11px] text-rose-700">{uploadError}</p>}
+        <section className="space-y-2 border-t border-slate-200 pt-3">
+          <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-xs font-bold text-slate-800">Meeting Summary</h3><div className="flex gap-1.5"><button type="button" onClick={handleExport} className="rounded bg-indigo-700 px-2.5 py-1 text-[11px] font-semibold text-white">Export HTML</button><button type="button" onClick={copySummary} className="flex items-center gap-1 rounded bg-slate-900 px-2.5 py-1 text-[11px] text-white">{copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}{copied ? 'Copied' : 'Copy'}</button><button type="button" onClick={() => window.print()} className="rounded bg-slate-100 p-1 text-slate-700"><Printer className="h-3.5 w-3.5" /></button></div></div>
+          <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-[10px] leading-relaxed text-slate-700">{generateSummaryText()}</pre>
+        </section>
+        <section className="space-y-1"><label className="text-xs font-bold text-slate-800">Closing Notes</label><textarea rows={3} value={report.notes || ''} onChange={(event) => updateMeetingReportNotes(event.target.value)} placeholder="Enter final meeting notes..." className="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-purple-500" /></section>
       </div>
-
-      {/* English Subtitle */}
-      <div className="px-3 py-1.5 bg-blue-50/90 border-b border-blue-100 flex items-center justify-between shrink-0">
-        <span className="text-[10px] font-semibold tracking-wide text-blue-950 font-sans truncate">
-          Final Evaluation Summary & Sign-off Report
-        </span>
-      </div>
-
-      {/* Content Form */}
-      <div className="flex-1 p-3 space-y-3.5 overflow-y-auto" dir="rtl">
-        {/* Recipient & Sign-off Agreement Box */}
-        <div className="bg-gradient-to-br from-purple-50/90 to-indigo-50/60 p-3 rounded-xl border border-purple-200 shadow-2xs space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-purple-950 flex items-center gap-1.5">
-              <Send className="w-3.5 h-3.5 text-purple-600" />
-              <span>Department Reports</span>
-            </span>
-          </div>
-
-          <div className="text-xs font-semibold text-purple-900">Department reports are uploaded separately below.</div>
-
-          {/* Action Count Badges (Overplanned & Tickets) */}
-          <div className="grid grid-cols-2 gap-2 pt-1">
-            <div className="bg-rose-50 border border-rose-200 p-2 rounded-lg text-center">
-              <div className="text-[10px] text-rose-700 font-bold">الـ Overplanned:</div>
-              <div className="text-xs font-black text-rose-950 font-mono mt-0.5">
-                {opActions.length} Actions Logged
-              </div>
-            </div>
-
-            <div className="bg-emerald-50 border border-emerald-200 p-2 rounded-lg text-center">
-              <div className="text-[10px] text-emerald-700 font-bold">الـ Tickets:</div>
-              <div className="text-xs font-black text-emerald-950 font-mono mt-0.5">
-                {tkActions.length} Actions Logged
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Department report uploads */}
-        <div className="space-y-2 p-3 rounded-xl border border-indigo-200 bg-indigo-50/40">
-          <label className="block text-xs font-bold text-slate-800">Department Report Upload</label>
-          <select value={selectedDepartment} onChange={(e) => setSelectedDepartment(e.target.value)} className="w-full p-2 text-xs bg-white border border-slate-300 rounded-lg">
-            {departmentOptions.map((department) => <option key={department} value={department}>{department}</option>)}
-          </select>
-          <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,image/*" className="w-full text-xs" onChange={(e) => {
-            const file = e.target.files?.[0]; if (!file) return;
-            const reader = new FileReader(); reader.onload = (event) => updateDepartmentReport(selectedDepartment, event.target?.result as string, file.name, (file.size / 1024).toFixed(1) + ' KB'); reader.readAsDataURL(file); e.target.value = '';
-          }} />
-          <div className="space-y-1">
-            {departmentOptions.map((department) => { const item = report.departmentReports?.[department]; return <div key={department} className="flex items-center justify-between gap-2 text-[11px] bg-white border border-slate-200 rounded p-2"><span>{department}</span><span className={item?.fileUrl ? 'text-emerald-700 font-semibold' : 'text-slate-400'}>{item?.fileName || 'No report uploaded'}</span>{item?.fileUrl && <button type="button" onClick={() => updateDepartmentReport(department, null)} className="text-rose-600">Remove</button>}</div>; })}
-          </div>
-        </div>
-
-        {/* Live Summary Preview & Fast Copy/Print */}
-        <div className="space-y-1.5 pt-2 border-t border-slate-200">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5 text-purple-600" />
-              <span>Meeting Summary ({activeMeeting.title}):</span>
-            </label>
-            <div className="flex items-center gap-1.5">
-              <button type="button" onClick={handleExportHtml} className="px-2.5 py-1 bg-indigo-700 hover:bg-indigo-800 text-white rounded text-[11px] font-semibold">Export HTML</button>
-              <button
-                type="button"
-                onClick={handleCopySummary}
-                className="flex items-center gap-1 px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded text-[11px] font-semibold transition-colors shadow-2xs"
-                title="نسخ ملخص الاجتماع"
-              >
-                {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                <span>{copied ? 'تم النسخ' : 'نسخ'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="p-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition-colors"
-                title="طباعة / حفظ كـ PDF"
-              >
-                <Printer className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-
-          <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-700 font-mono space-y-1 leading-relaxed max-h-[170px] overflow-y-auto">
-            <div>
-              <strong>العضو:</strong> {activeMember.name} ({activeMember.seniority || 'QA'})
-            </div>
-            <div>
-              <strong>الفترة:</strong> من {activeMeeting.duration?.startDate || '25/9'} إلى {activeMeeting.duration?.endDate || '26/10'}
-            </div>
-            {activeMeeting.totalTasksScreen?.screenshotUrl && (
-              <div className="text-emerald-700 font-semibold">✓ تم إرفاق سكرين شوت التاسكات</div>
-            )}
-          </div>
-        </div>
-
-        {/* Meeting Notes for Person */}
-        <div className="space-y-1">
-          <label className="block text-xs font-bold text-slate-800">
-            Closing Notes:
-          </label>
-          <textarea
-            rows={2}
-            value={report.notes || ''}
-            onChange={(e) => updateMeetingReportNotes(e.target.value)}
-            placeholder="Enter any final notes for this meeting report..."
-            className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 focus:bg-white resize-none shadow-2xs"
-          />
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="p-2 bg-purple-50/50 border-t border-purple-100 text-[10px] text-purple-950 text-center font-mono shrink-0">
-        {Object.values(report.departmentReports || {}).filter((item) => item?.fileUrl).length} Department Reports Uploaded
-      </div>
+      <div className="shrink-0 border-t border-purple-100 bg-purple-50/50 p-2 text-center text-[10px] text-purple-950">{Object.values(departmentReports).filter(Boolean).length} Department Reports · {qualityReport ? 'Quality Report attached' : 'No Quality Report'}</div>
+      {preview && <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-4" role="dialog" aria-modal="true" aria-label="File preview"><div className="flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"><div className="flex items-center justify-between border-b p-3"><div className="truncate text-xs font-bold text-slate-800">{preview.title} · {preview.file.fileName}</div><button type="button" onClick={() => setPreview(null)} className="rounded bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">Close</button></div><div className="min-h-0 flex-1 bg-slate-100">{preview.file.fileUrl.startsWith('data:application/pdf') ? <iframe title="Report PDF preview" src={preview.file.fileUrl} className="h-full w-full" /> : preview.file.fileUrl.startsWith('data:image/') ? <img src={preview.file.fileUrl} alt="Uploaded report preview" className="h-full w-full object-contain" /> : <div className="flex h-full flex-col items-center justify-center gap-3 text-sm text-slate-600"><FileText className="h-10 w-10" />Preview is available for PDF and image files. Download this file to open it in its native application.</div>}</div></div></div>}
     </div>
   );
 };
