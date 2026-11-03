@@ -1,11 +1,36 @@
 import React, { useState } from 'react';
 import { useDashboard } from '../context/DashboardContext';
-import { Users, UserPlus, Trash2, Pencil, Shield, Check, X, AlertCircle } from 'lucide-react';
+import { Users, UserPlus, Trash2, Pencil, Shield, Check, X, AlertCircle, ImagePlus } from 'lucide-react';
 
 interface UsersManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+const resizeUserPhoto = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const image = new Image();
+      image.onload = () => {
+        const scale = Math.min(1, 480 / Math.max(image.width, image.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext('2d');
+        if (!context) {
+          reject(new Error('تعذر تجهيز الصورة'));
+          return;
+        }
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.78));
+      };
+      image.onerror = () => reject(new Error('تعذر قراءة الصورة'));
+      image.src = String(reader.result);
+    };
+    reader.onerror = () => reject(new Error('تعذر قراءة الصورة'));
+    reader.readAsDataURL(file);
+  });
 
 export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOpen, onClose }) => {
   const { users, currentUser, addUser, updateUser, deleteUser } = useDashboard();
@@ -15,9 +40,10 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('Quality Engineer');
+  const [newPhotoUrl, setNewPhotoUrl] = useState('');
 
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState({ name: '', username: '', password: '', role: '' });
+  const [editValues, setEditValues] = useState({ name: '', username: '', password: '', role: '', photoUrl: '' });
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -32,11 +58,12 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
       return;
     }
 
-    await addUser(name.trim(), username.trim(), password.trim(), role.trim());
+    await addUser(name.trim(), username.trim(), password.trim(), role.trim(), newPhotoUrl);
     setName('');
     setUsername('');
     setPassword('');
     setRole('Quality Engineer');
+    setNewPhotoUrl('');
     setShowAddForm(false);
     setStatusMessage('تمت إضافة المستخدم بنجاح!');
     setTimeout(() => setStatusMessage(null), 3000);
@@ -59,6 +86,7 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
       username: usernameValue,
       password: passwordValue,
       role: roleValue,
+      photoUrl: editValues.photoUrl,
     });
     setEditingUserId(null);
     setStatusMessage('تم تحديث بيانات المستخدم بنجاح!');
@@ -179,6 +207,35 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
                 </div>
               </div>
 
+              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-blue-300 bg-white p-2 text-xs font-semibold text-blue-800 hover:bg-blue-50">
+                <ImagePlus className="h-4 w-4" />
+                {newPhotoUrl ? 'تغيير صورة المستخدم' : 'إضافة صورة المستخدم'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    try {
+                      setNewPhotoUrl(await resizeUserPhoto(file));
+                      setStatusMessage(null);
+                    } catch {
+                      setStatusMessage('تعذر تحميل الصورة، جرّب ملفًا آخر.');
+                    }
+                    event.target.value = '';
+                  }}
+                />
+              </label>
+              {newPhotoUrl && (
+                <div className="flex items-center gap-2">
+                  <img src={newPhotoUrl} alt="معاينة صورة المستخدم" className="h-10 w-10 rounded-full border border-blue-200 object-cover" />
+                  <button type="button" onClick={() => setNewPhotoUrl('')} className="text-[10px] font-semibold text-rose-600 hover:text-rose-700">
+                    إزالة الصورة
+                  </button>
+                </div>
+              )}
+
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
                 <button
                   type="button"
@@ -208,7 +265,7 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
           </datalist>
           <div className="space-y-2.5">
             <div className="text-xs font-bold text-slate-700">قائمة المستخدمين الحاليين:</div>
-            
+
             {users.map((u) => {
               const isCurrentUser = currentUser?.id === u.id;
               const isEditing = editingUserId === u.id;
@@ -222,9 +279,13 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-9 h-9 rounded-full ${u.color || 'bg-indigo-600'} text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs`}>
-                        {u.name.slice(0, 2)}
-                      </div>
+                      {u.photoUrl ? (
+                        <img src={u.photoUrl} alt={u.name} className="h-9 w-9 shrink-0 rounded-full border border-blue-200 object-cover shadow-2xs" />
+                      ) : (
+                        <div className={`w-9 h-9 rounded-full ${u.color || 'bg-indigo-600'} text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs`}>
+                          {u.name.slice(0, 2)}
+                        </div>
+                      )}
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold text-slate-900">{u.name}</span>
@@ -250,7 +311,7 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
                             setEditingUserId(null);
                           } else {
                             setEditingUserId(u.id);
-                            setEditValues({ name: u.name, username: u.username, password: u.password, role: u.role });
+                            setEditValues({ name: u.name, username: u.username, password: u.password, role: u.role, photoUrl: u.photoUrl || '' });
                           }
                         }}
                         className="flex items-center gap-1 px-2.5 py-1 bg-white border border-slate-300 hover:border-indigo-400 text-slate-700 hover:text-indigo-600 rounded-lg text-xs font-medium transition-colors"
@@ -315,6 +376,34 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
                             className="mt-1 w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
                           />
                         </label>
+                      </div>
+                      <div className="flex items-center gap-2 border-t border-slate-100 pt-2">
+                        <label className="flex cursor-pointer items-center gap-1.5 rounded border border-blue-200 bg-blue-50 px-2 py-1.5 text-[10px] font-semibold text-blue-800 hover:bg-blue-100">
+                          <ImagePlus className="h-3.5 w-3.5" />
+                          تغيير الصورة
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="sr-only"
+                            onChange={async (event) => {
+                              const file = event.target.files?.[0];
+                              if (!file) return;
+                              try {
+                                const photoUrl = await resizeUserPhoto(file);
+                                setEditValues((current) => ({ ...current, photoUrl }));
+                                setStatusMessage(null);
+                              } catch {
+                                setStatusMessage('تعذر تحميل الصورة، جرّب ملفًا آخر.');
+                              }
+                              event.target.value = '';
+                            }}
+                          />
+                        </label>
+                        {editValues.photoUrl && (
+                          <button type="button" onClick={() => setEditValues({ ...editValues, photoUrl: '' })} className="text-[10px] font-semibold text-rose-600 hover:text-rose-700">
+                            إزالة الصورة
+                          </button>
+                        )}
                       </div>
                       <div className="flex justify-end">
                         <button

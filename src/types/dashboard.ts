@@ -13,6 +13,7 @@ export interface AppUser {
   name: string;
   role: string;
   color: string;
+  photoUrl?: string;
 }
 
 export interface MeetingSession {
@@ -62,12 +63,12 @@ export interface MeetingSession {
 export type SeniorityTier = 'Junior' | 'Middle' | 'Senior';
 
 export interface QualityMemberProfile {
-  subject?: string;
+  subject?: string[];
   stages?: string;
-  summaryGrades?: string;
-  quizGrades?: string;
-  visualizationGrades?: string;
-  courseCount?: number;
+  summaryGrades?: string[];
+  quizGrades?: string[];
+  coursesReviewed?: string[];
+  coursesProduced?: string[];
   photoUrl?: string;
 }
 

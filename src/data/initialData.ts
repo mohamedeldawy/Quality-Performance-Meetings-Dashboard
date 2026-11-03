@@ -210,7 +210,7 @@ export const INITIAL_MEMBERS: QualityMemberReview[] = [
       {
         ...sampleMeeting1,
         id: 'mtg-karim-1',
-        title: 'Meeting 1 (فحص الشاشات والتسجيل)',
+        title: 'Meeting 1',
         overplannedNegotiation: {
           discussionNotes: 'مراجعة تدفق تسجيل الطلاب الجدد واستعادة كلمة المرور.',
           actions: [],

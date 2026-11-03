@@ -8,7 +8,7 @@ interface DashboardContextType {
   users: AppUser[];
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
-  addUser: (name: string, username: string, password: string, role?: string) => Promise<void>;
+  addUser: (name: string, username: string, password: string, role?: string, photoUrl?: string) => Promise<void>;
   updateUser: (id: string, updates: Partial<AppUser>) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
 
@@ -62,6 +62,27 @@ const STORAGE_KEY = 'quality_team_meeting_dashboard_v6';
 const USERS_STORAGE_KEY = 'quality_team_users_v3';
 const AUTH_SESSION_KEY = 'quality_team_auth_session_v2';
 
+const normalizeStringList = (value: unknown): string[] => {
+  const values = Array.isArray(value) ? value : typeof value === 'string' && value.trim() ? [value.trim()] : [];
+  return Array.from(new Set(values.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean)));
+};
+
+const cleanMeetingTitle = (title: string) => title.replace(/\s*\(فحص الشاشات والتسجيل\)/g, '').trim();
+
+const normalizeMemberProfile = (member: QualityMemberReview): QualityMemberReview => ({
+  ...member,
+  subject: normalizeStringList(member.subject),
+  summaryGrades: normalizeStringList(member.summaryGrades),
+  quizGrades: normalizeStringList(member.quizGrades),
+  coursesReviewed: normalizeStringList(member.coursesReviewed),
+  coursesProduced: normalizeStringList(member.coursesProduced),
+  stages: member.stages || '',
+  photoUrl: member.photoUrl || '',
+  meetings: Array.isArray(member.meetings)
+    ? member.meetings.map((meeting) => ({ ...meeting, title: cleanMeetingTitle(meeting.title) }))
+    : [],
+});
+
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
 
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -79,6 +100,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             name: u.name || `User ${idx + 1}`,
             role: u.role || 'Quality Engineer',
             color: u.color || 'bg-indigo-600',
+            photoUrl: u.photoUrl || '',
           }));
         }
       }
@@ -139,12 +161,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 name: m.name || `Member ${idx + 1}`,
                 role: m.role === 'Frontend QA Specialist' ? '' : m.role || 'Quality Engineer',
                 seniority: inferredSeniority,
-                subject: m.subject || '',
+                subject: normalizeStringList(m.subject),
                 stages: m.stages || '',
-                summaryGrades: m.summaryGrades || '',
-                quizGrades: m.quizGrades || '',
-                visualizationGrades: m.visualizationGrades || '',
-                courseCount: Number(m.courseCount) || 0,
+                summaryGrades: normalizeStringList(m.summaryGrades),
+                quizGrades: normalizeStringList(m.quizGrades),
+                coursesReviewed: normalizeStringList(m.coursesReviewed),
+                coursesProduced: normalizeStringList(m.coursesProduced),
                 photoUrl: m.photoUrl || '',
                 meetings: [defaultMtg],
                 activeMeetingId: defaultMtg.id,
@@ -157,16 +179,16 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               name: m.name || `Member ${idx + 1}`,
               role: m.role === 'Frontend QA Specialist' ? '' : m.role || 'Quality Engineer',
               seniority: inferredSeniority,
-              subject: m.subject || '',
+              subject: normalizeStringList(m.subject),
               stages: m.stages || '',
-              summaryGrades: m.summaryGrades || '',
-              quizGrades: m.quizGrades || '',
-              visualizationGrades: m.visualizationGrades || '',
-              courseCount: Number(m.courseCount) || 0,
+              summaryGrades: normalizeStringList(m.summaryGrades),
+              quizGrades: normalizeStringList(m.quizGrades),
+              coursesReviewed: normalizeStringList(m.coursesReviewed),
+              coursesProduced: normalizeStringList(m.coursesProduced),
               photoUrl: m.photoUrl || '',
               meetings: m.meetings.map((mtg: any, mIdx: number) => ({
                 id: mtg.id || `mtg-${mIdx}`,
-                title: mtg.title || `Meeting ${mIdx + 1}`,
+                title: cleanMeetingTitle(mtg.title || `Meeting ${mIdx + 1}`),
                 createdAt: mtg.createdAt || '2026-10-26',
                 duration: mtg.duration || { startDate: '2026-09-25', endDate: '2026-10-26', notes: '' },
                 totalTasksScreen: mtg.totalTasksScreen || { screenshotUrl: null },
@@ -219,10 +241,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       ? activeMember.meetings
       : INITIAL_MEMBERS[0].meetings;
 
-  const activeMeeting: MeetingSession =
+  const selectedMeeting: MeetingSession =
     safeMeetings.find((mtg) => mtg.id === activeMember.activeMeetingId) ||
     safeMeetings[0] ||
     INITIAL_MEMBERS[0].meetings[0];
+  const activeMeeting: MeetingSession = {
+    ...selectedMeeting,
+    title: cleanMeetingTitle(selectedMeeting.title),
+  };
 
   // Sync to local storage
   useEffect(() => {
@@ -302,7 +328,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           if (remoteData.version > versionRef.current && !isSavingRef.current) {
             versionRef.current = remoteData.version;
             if (Array.isArray(remoteData.members) && remoteData.members.length > 0) {
-              setMembers(remoteData.members);
+              setMembers(remoteData.members.map(normalizeMemberProfile));
             }
             if (Array.isArray(remoteData.users) && remoteData.users.length > 0) {
               setUsers(remoteData.users);
@@ -514,7 +540,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   // User Management
-  const addUser = async (name: string, username: string, password: string, role = 'Quality Engineer') => {
+  const addUser = async (name: string, username: string, password: string, role = 'Quality Engineer', photoUrl = '') => {
     if (!name.trim() || !username.trim() || !password.trim()) return;
     const colors = ['bg-indigo-600', 'bg-emerald-600', 'bg-amber-600', 'bg-rose-600', 'bg-violet-600', 'bg-cyan-600'];
     const newUser: AppUser = {
@@ -524,6 +550,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       name: name.trim(),
       role: role.trim(),
       color: colors[users.length % colors.length],
+      photoUrl,
     };
 
     const updatedUsers = [...users, newUser];

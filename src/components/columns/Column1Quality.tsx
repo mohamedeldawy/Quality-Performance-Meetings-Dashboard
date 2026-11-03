@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 import { QualityMemberProfile, SeniorityTier } from '../../types/dashboard';
+import { QUALITY_COURSE_OPTIONS, QUALITY_GRADE_OPTIONS, QUALITY_SUBJECT_OPTIONS } from '../../data/qualityOptions';
 import {
   Plus,
   Trash2,
@@ -19,6 +20,59 @@ type MemberFormValues = QualityMemberProfile & {
   name: string;
   role: string;
   seniority: SeniorityTier;
+};
+
+interface MultiSelectDropdownProps {
+  label: string;
+  value: string[];
+  options: string[];
+  onChange: (value: string[]) => void;
+  placeholder: string;
+}
+
+const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({ label, value, options, onChange, placeholder }) => {
+  const [query, setQuery] = useState('');
+  const filteredOptions = useMemo(
+    () => options.filter((option) => option.toLowerCase().includes(query.trim().toLowerCase())),
+    [options, query]
+  );
+
+  return (
+    <div className="block min-w-0 text-[11px] font-semibold text-slate-700">
+      <span>{label}</span>
+      <details className="relative mt-1">
+        <summary className="flex cursor-pointer items-center justify-between gap-2 rounded border border-slate-300 bg-white p-2 text-xs font-normal text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500">
+          <span className="truncate">
+            {value.length ? `${value.length} محدد: ${value.slice(0, 2).join('، ')}${value.length > 2 ? '…' : ''}` : placeholder}
+          </span>
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-blue-700" />
+        </summary>
+        <div className="absolute right-0 top-full z-30 mt-1 w-full min-w-[220px] rounded-lg border border-blue-200 bg-white p-2 shadow-xl">
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="ابحث في الخيارات..."
+            className="mb-2 w-full rounded border border-slate-300 p-1.5 text-xs font-normal focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+          <div className="max-h-40 space-y-0.5 overflow-y-auto">
+            {filteredOptions.map((option) => (
+              <label key={option} className="flex cursor-pointer items-start gap-2 rounded px-1.5 py-1 text-[11px] font-normal text-slate-700 hover:bg-sky-50">
+                <input
+                  type="checkbox"
+                  checked={value.includes(option)}
+                  onChange={() => onChange(value.includes(option) ? value.filter((item) => item !== option) : [...value, option])}
+                  className="mt-0.5 accent-blue-700"
+                />
+                <span>{option}</span>
+              </label>
+            ))}
+            {filteredOptions.length === 0 && <p className="px-1.5 py-2 text-[10px] font-normal text-slate-500">لا توجد نتائج.</p>}
+          </div>
+        </div>
+      </details>
+    </div>
+  );
 };
 
 const prepareMemberImage = (file: File): Promise<string> =>
@@ -61,7 +115,7 @@ export const Column1Quality: React.FC = () => {
     deleteMeeting,
   } = useDashboard();
 
-  // Tier selection: Junior, Middle, Senior
+  // Grade selection: Junior, Middle, Senior
   const [selectedTier, setSelectedTier] = useState<SeniorityTier>(() => {
     return activeMember?.seniority || 'Senior';
   });
@@ -74,12 +128,12 @@ export const Column1Quality: React.FC = () => {
     name: '',
     role: '',
     seniority: 'Senior',
-    subject: '',
+    subject: [],
     stages: '',
-    summaryGrades: '',
-    quizGrades: '',
-    visualizationGrades: '',
-    courseCount: 0,
+    summaryGrades: [],
+    quizGrades: [],
+    coursesReviewed: [],
+    coursesProduced: [],
     photoUrl: '',
   });
   const [imageError, setImageError] = useState('');
@@ -133,12 +187,12 @@ export const Column1Quality: React.FC = () => {
       name: activeMember.name,
       role: activeMember.role,
       seniority: activeMember.seniority || selectedTier,
-      subject: activeMember.subject || '',
+      subject: activeMember.subject || [],
       stages: activeMember.stages || '',
-      summaryGrades: activeMember.summaryGrades || '',
-      quizGrades: activeMember.quizGrades || '',
-      visualizationGrades: activeMember.visualizationGrades || '',
-      courseCount: activeMember.courseCount || 0,
+      summaryGrades: activeMember.summaryGrades || [],
+      quizGrades: activeMember.quizGrades || [],
+      coursesReviewed: activeMember.coursesReviewed || [],
+      coursesProduced: activeMember.coursesProduced || [],
       photoUrl: activeMember.photoUrl || '',
     });
     setEditingMemberId(activeMember.id);
@@ -167,12 +221,12 @@ export const Column1Quality: React.FC = () => {
               name: '',
               role: '',
               seniority: selectedTier,
-              subject: '',
+              subject: [],
               stages: '',
-              summaryGrades: '',
-              quizGrades: '',
-              visualizationGrades: '',
-              courseCount: 0,
+              summaryGrades: [],
+              quizGrades: [],
+              coursesReviewed: [],
+              coursesProduced: [],
               photoUrl: '',
             });
             setShowAddMemberForm(!showAddMemberForm);
@@ -198,8 +252,8 @@ export const Column1Quality: React.FC = () => {
       {/* 3 Seniority Boxes (Junior / Middle / Senior) */}
       <div className="p-2 bg-slate-50/90 border-b border-slate-200 shrink-0">
         <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 px-0.5 flex items-center justify-between">
-          <span>مستوى الخبرة (Seniority Tier):</span>
-          <span className="text-indigo-600 font-mono text-[9px] font-bold">3 Tiers</span>
+          <span>المستوى الدراسي (Grade):</span>
+          <span className="text-indigo-600 font-mono text-[9px] font-bold">3 Grades</span>
         </div>
         <div className="grid grid-cols-3 gap-1.5">
           {(['Junior', 'Middle', 'Senior'] as SeniorityTier[]).map((tier) => {
@@ -270,7 +324,7 @@ export const Column1Quality: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">المستوى (Tier) *</label>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Grade *</label>
                 <select
                   value={memberForm.seniority}
                   onChange={(e) => setMemberForm({ ...memberForm, seniority: e.target.value as SeniorityTier })}
@@ -283,15 +337,13 @@ export const Column1Quality: React.FC = () => {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <label className="block text-[11px] font-semibold text-slate-700">
-                المادة
-                <input
-                  value={memberForm.subject}
-                  onChange={(e) => setMemberForm({ ...memberForm, subject: e.target.value })}
-                  placeholder="مثال: الرياضيات"
-                  className="mt-1 w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </label>
+              <MultiSelectDropdown
+                label="المادة"
+                value={memberForm.subject || []}
+                options={QUALITY_SUBJECT_OPTIONS}
+                onChange={(subject) => setMemberForm({ ...memberForm, subject })}
+                placeholder="اختار مادة أو أكثر"
+              />
               <label className="block text-[11px] font-semibold text-slate-700">
                 المراحل الدراسية
                 <input
@@ -301,45 +353,36 @@ export const Column1Quality: React.FC = () => {
                   className="mt-1 w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </label>
-              <label className="block text-[11px] font-semibold text-slate-700">
-                ملخصات أي صفوف؟
-                <input
-                  value={memberForm.summaryGrades}
-                  onChange={(e) => setMemberForm({ ...memberForm, summaryGrades: e.target.value })}
-                  placeholder="مثال: الأول والثاني الثانوي"
-                  className="mt-1 w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </label>
-              <label className="block text-[11px] font-semibold text-slate-700">
-                التصورات لأي صفوف؟
-                <input
-                  value={memberForm.visualizationGrades}
-                  onChange={(e) => setMemberForm({ ...memberForm, visualizationGrades: e.target.value })}
-                  placeholder="حدد الصفوف الدراسية"
-                  className="mt-1 w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </label>
-              <label className="block text-[11px] font-semibold text-slate-700">
-                كويزات أي صفوف؟
-                <input
-                  value={memberForm.quizGrades}
-                  onChange={(e) => setMemberForm({ ...memberForm, quizGrades: e.target.value })}
-                  placeholder="حدد الصفوف الدراسية"
-                  className="mt-1 w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </label>
+              <MultiSelectDropdown
+                label="الملخصات - Grade"
+                value={memberForm.summaryGrades || []}
+                options={QUALITY_GRADE_OPTIONS[memberForm.seniority]}
+                onChange={(summaryGrades) => setMemberForm({ ...memberForm, summaryGrades })}
+                placeholder={memberForm.seniority === 'Senior' ? 'لا توجد Grades محددة للسينيور' : 'اختار Grade أو أكثر'}
+              />
+              <MultiSelectDropdown
+                label="الكويزات - Grade"
+                value={memberForm.quizGrades || []}
+                options={QUALITY_GRADE_OPTIONS[memberForm.seniority]}
+                onChange={(quizGrades) => setMemberForm({ ...memberForm, quizGrades })}
+                placeholder={memberForm.seniority === 'Senior' ? 'لا توجد Grades محددة للسينيور' : 'اختار Grade أو أكثر'}
+              />
             </div>
             <div className="grid grid-cols-2 gap-2 items-end">
-              <label className="block text-[11px] font-semibold text-slate-700">
-                عدد الكورسات المسؤول عنها
-                <input
-                  type="number"
-                  min="0"
-                  value={memberForm.courseCount}
-                  onChange={(e) => setMemberForm({ ...memberForm, courseCount: Number(e.target.value) })}
-                  className="mt-1 w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </label>
+              <MultiSelectDropdown
+                label="كورسات للمراجعة"
+                value={memberForm.coursesReviewed || []}
+                options={QUALITY_COURSE_OPTIONS}
+                onChange={(coursesReviewed) => setMemberForm({ ...memberForm, coursesReviewed })}
+                placeholder="ابحث واختار كورسات المراجعة"
+              />
+              <MultiSelectDropdown
+                label="كورسات للإنتاج"
+                value={memberForm.coursesProduced || []}
+                options={QUALITY_COURSE_OPTIONS}
+                onChange={(coursesProduced) => setMemberForm({ ...memberForm, coursesProduced })}
+                placeholder="ابحث واختار كورسات الإنتاج"
+              />
               <div>
                 <label className="flex items-center justify-center gap-1.5 w-full p-2 bg-white border border-slate-300 rounded text-[11px] font-semibold text-blue-800 cursor-pointer hover:bg-blue-50">
                   <ImagePlus className="w-4 h-4" />
@@ -420,18 +463,13 @@ export const Column1Quality: React.FC = () => {
                       {activeMember.role || 'بدون مسمى وظيفي'}
                     </div>
                     <div className="text-[10px] text-blue-800 font-semibold truncate mt-1">
-                      {activeMember.subject || 'لم تُحدد المادة'}
+                      {(activeMember.subject || []).join('، ') || 'لم تُحدد المادة'}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-800 text-white font-mono shadow-2xs">
-                    {activeMember.seniority || selectedTier}
-                  </span>
-                  <span className="text-[10px] text-slate-500 font-mono">
-                    {activeMember.meetings.length} ميتنج
-                  </span>
+                <div className="shrink-0 text-[10px] text-slate-500 font-mono">
+                  {activeMember.meetings.length} ميتنج
                 </div>
               </div>
 
@@ -442,21 +480,25 @@ export const Column1Quality: React.FC = () => {
                 </div>
                 <div className="flex items-start justify-between gap-2">
                   <span className="text-slate-500 shrink-0">ملخصات</span>
-                  <span className="text-slate-800 font-semibold text-left">{activeMember.summaryGrades || 'غير محددة'}</span>
+                  <span className="text-slate-800 font-semibold text-left">{(activeMember.summaryGrades || []).join('، ') || 'غير محددة'}</span>
                 </div>
                 <div className="flex items-start justify-between gap-2">
                   <span className="text-slate-500 shrink-0">الكويزات</span>
-                  <span className="text-slate-800 font-semibold text-left">{activeMember.quizGrades || 'غير محددة'}</span>
+                  <span className="text-slate-800 font-semibold text-left">{(activeMember.quizGrades || []).join('، ') || 'غير محددة'}</span>
                 </div>
-                <div className="flex items-start justify-between gap-2">
-                  <span className="text-slate-500 shrink-0">التصورات</span>
-                  <span className="text-slate-800 font-semibold text-left">{activeMember.visualizationGrades || 'غير محددة'}</span>
+                <div className="border-t border-blue-100 pt-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-slate-500">كورسات للمراجعة</span>
+                    <span className="font-bold text-blue-900">{(activeMember.coursesReviewed || []).length}</span>
+                  </div>
+                  <p className="line-clamp-2 text-[10px] text-slate-700">{(activeMember.coursesReviewed || []).join(' · ') || 'لا توجد كورسات محددة'}</p>
                 </div>
-                <div className="flex items-center justify-between gap-2 pt-1 border-t border-blue-100">
-                  <span className="text-blue-900 font-bold">الكورسات المسؤول عنها</span>
-                  <span className="min-w-7 text-center px-2 py-0.5 rounded bg-amber-100 text-slate-900 font-bold">
-                    {activeMember.courseCount ?? 0}
-                  </span>
+                <div className="border-t border-blue-100 pt-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-slate-500">كورسات للإنتاج</span>
+                    <span className="font-bold text-blue-900">{(activeMember.coursesProduced || []).length}</span>
+                  </div>
+                  <p className="line-clamp-2 text-[10px] text-slate-700">{(activeMember.coursesProduced || []).join(' · ') || 'لا توجد كورسات محددة'}</p>
                 </div>
               </div>
 
@@ -502,7 +544,7 @@ export const Column1Quality: React.FC = () => {
           <div className="space-y-1.5 bg-slate-50/80 p-2 rounded-xl border border-slate-200">
             <div className="flex items-center justify-between px-1">
               <span className="text-[11px] font-bold text-slate-700">
-                اختر عضواً من فئة ({selectedTier}):
+                اختر عضوًا من Grade ({selectedTier}):
               </span>
               {activeMember && (
                 <button
@@ -517,7 +559,7 @@ export const Column1Quality: React.FC = () => {
 
             {tierMembers.length === 0 ? (
               <div className="text-center py-4 text-xs text-slate-500 bg-white rounded-lg border border-dashed border-slate-300">
-                لا يوجد أعضاء مسجلين في فئة <strong className="text-indigo-600">{selectedTier}</strong> حالياً.
+                لا يوجد أعضاء مسجلون في Grade <strong className="text-indigo-600">{selectedTier}</strong> حاليًا.
                 <div className="mt-2">
                   <button
                     type="button"
@@ -675,7 +717,7 @@ export const Column1Quality: React.FC = () => {
 
       {/* Footer Info */}
       <div className="p-2 bg-indigo-50/50 border-t border-indigo-100 text-[10px] text-indigo-900 text-center font-mono shrink-0">
-        Active: {activeMember?.name} ({activeMember?.seniority || selectedTier}) · {activeMeeting?.title}
+        Active: {activeMember?.name} · {activeMeeting?.title}
       </div>
     </div>
   );

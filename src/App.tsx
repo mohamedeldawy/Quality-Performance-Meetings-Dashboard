@@ -121,7 +121,7 @@ const DashboardContent: React.FC = () => {
 
           {/* Sync Status Badge */}
           <div
-            className="hidden md:flex items-center gap-2 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg text-[11px] text-slate-600 shadow-2xs"
+            className="hidden md:flex items-center gap-2 bg-white/10 border border-white/20 px-2.5 py-1 rounded-lg text-[11px] text-sky-50 shadow-2xs"
             dir="rtl"
           >
             <span className="flex items-center gap-1 font-semibold">
@@ -138,13 +138,13 @@ const DashboardContent: React.FC = () => {
               />
               <span>{syncStatus === 'saving' ? 'جاري الحفظ...' : syncStatus === 'syncing' ? 'مزامنة...' : 'محفوظ ومشترك'}</span>
             </span>
-            <span className="text-slate-300">·</span>
+            <span className="text-white/40">·</span>
             <span className="truncate max-w-[150px]">
-              آخر تعديل: <strong className="text-slate-800">{lastUpdatedBy}</strong>
+              آخر تعديل: <strong className="text-white">{lastUpdatedBy}</strong>
             </span>
             <button
               onClick={() => refreshFromServer()}
-              className="p-1 text-slate-400 hover:text-indigo-600 transition-colors"
+              className="p-1 text-sky-100 hover:text-amber-300 transition-colors"
               title="تحديث البيانات من السيرفر"
             >
               <RefreshCw className="w-3 h-3" />
@@ -170,14 +170,18 @@ const DashboardContent: React.FC = () => {
 
           {/* Current User Info */}
           <div className="flex items-center gap-2 bg-white/10 border border-white/20 px-2.5 py-1 rounded-lg shadow-2xs">
-            <div className="w-6 h-6 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center font-bold text-[10px]">
-              {currentUser.name.slice(0, 2)}
+            <div className="w-6 h-6 rounded-full overflow-hidden bg-amber-400 text-slate-950 flex items-center justify-center font-bold text-[10px] shrink-0">
+              {currentUser.photoUrl ? (
+                <img src={currentUser.photoUrl} alt={currentUser.name} className="h-full w-full object-cover" />
+              ) : (
+                currentUser.name.slice(0, 2)
+              )}
             </div>
             <div className="text-right">
-              <div className="text-xs font-bold text-slate-900 leading-tight">
+              <div className="text-xs font-bold text-white leading-tight">
                 {currentUser.name}
               </div>
-              <div className="text-[10px] text-slate-500 leading-tight">
+              <div className="text-[10px] text-sky-100 leading-tight">
                 {currentUser.role}
               </div>
             </div>
