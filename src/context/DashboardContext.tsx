@@ -20,6 +20,7 @@ interface DashboardContextType {
   activeMeeting: MeetingSession;
   setActiveMemberId: (id: string) => void;
   setActiveMeetingId: (meetingId: string) => void;
+  updateMeetingDate: (meetingDate: string) => void;
   addMember: (name: string, role?: string, seniority?: SeniorityTier, profile?: QualityMemberProfile) => void;
   updateMember: (id: string, updates: Partial<QualityMemberReview>) => void;
   updateMemberSeniority: (id: string, seniority: SeniorityTier) => void;
@@ -439,6 +440,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     pushToServer(updated);
   };
 
+  const updateMeetingDate = (meetingDate: string) => updateCurrentMeeting((prev) => ({ ...prev, meetingDate }));
+
   const addMeeting = (title?: string) => {
     const authorName = currentUser ? currentUser.name : 'مستخدم الداشبورد';
     const newMtgId = `mtg-${Date.now()}`;
@@ -743,6 +746,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         activeMeeting,
         setActiveMemberId,
         setActiveMeetingId,
+        updateMeetingDate,
         addMember,
         updateMember,
         updateMemberSeniority,
