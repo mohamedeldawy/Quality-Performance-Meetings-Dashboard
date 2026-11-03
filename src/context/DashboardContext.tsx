@@ -44,12 +44,16 @@ interface DashboardContextType {
   addOverplannedAction: (text: string, dueDate?: string) => void;
   toggleOverplannedAction: (actionId: string) => void;
   deleteOverplannedAction: (actionId: string) => void;
+  updateOverplannedDepartments: (departments: string[]) => void;
+  setOverplannedNoAction: (value: boolean) => void;
 
   // Column 5: Tickets Screen
   updateTicketsDiscussion: (notes: string) => void;
   addTicketsAction: (text: string, dueDate?: string) => void;
   toggleTicketsAction: (actionId: string) => void;
   deleteTicketsAction: (actionId: string) => void;
+  updateTicketsDepartments: (departments: string[]) => void;
+  setTicketsNoAction: (value: boolean) => void;
 
   // Column 6: Meeting Report
   updateMeetingReportFile: (fileUrl: string | null, fileName?: string, fileSize?: string) => void;
@@ -560,6 +564,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }));
   };
 
+  const updateOverplannedDepartments = (departments: string[]) => updateCurrentMeeting((prev) => ({ ...prev, overplannedNegotiation: { ...prev.overplannedNegotiation, discussionNotes: prev.overplannedNegotiation?.discussionNotes || '', actions: prev.overplannedNegotiation?.actions || [], departmentsActions: departments } }));
+  const setOverplannedNoAction = (value: boolean) => updateCurrentMeeting((prev) => ({ ...prev, overplannedNegotiation: { ...prev.overplannedNegotiation, discussionNotes: prev.overplannedNegotiation?.discussionNotes || '', actions: prev.overplannedNegotiation?.actions || [], noAction: value } }));
+
   const addOverplannedAction = (text: string, dueDate?: string) => {
     if (!text.trim()) return;
     const authorName = currentUser ? currentUser.name : 'مستخدم الداشبورد';
@@ -610,6 +617,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       },
     }));
   };
+
+  const updateTicketsDepartments = (departments: string[]) => updateCurrentMeeting((prev) => ({ ...prev, ticketsScreen: { ...prev.ticketsScreen, discussionNotes: prev.ticketsScreen?.discussionNotes || '', actions: prev.ticketsScreen?.actions || [], departmentsActions: departments } }));
+  const setTicketsNoAction = (value: boolean) => updateCurrentMeeting((prev) => ({ ...prev, ticketsScreen: { ...prev.ticketsScreen, discussionNotes: prev.ticketsScreen?.discussionNotes || '', actions: prev.ticketsScreen?.actions || [], noAction: value } }));
 
   const addTicketsAction = (text: string, dueDate?: string) => {
     if (!text.trim()) return;
