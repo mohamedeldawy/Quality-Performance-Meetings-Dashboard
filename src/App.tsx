@@ -21,6 +21,7 @@ const DashboardContent: React.FC = () => {
   const {
     currentUser,
     users,
+    members,
     logout,
     activeMember,
     activeMeeting,
@@ -71,12 +72,7 @@ const DashboardContent: React.FC = () => {
             <p className="text-[11px] text-sky-100 flex items-center gap-1.5" dir="rtl">
               <span>مراجعة أداء فريق الـ Quality</span>
               <span className="text-white/40">·</span>
-              <strong className="text-white">{activeMember.name}</strong>
-              <span className="px-1.5 py-0.2 bg-amber-400 text-slate-950 rounded text-[9px] font-bold font-mono">
-                {activeMember.seniority || 'Quality'}
-              </span>
-              <span className="text-white/40">·</span>
-              <span className="text-amber-300 font-semibold">{activeMeeting.title}</span>
+              {members.length > 0 ? <><strong className="text-white">{activeMember.name}</strong><span className="px-1.5 py-0.2 bg-amber-400 text-slate-950 rounded text-[9px] font-bold font-mono">{activeMember.seniority || 'Quality'}</span><span className="text-white/40">·</span><span className="text-amber-300 font-semibold">{activeMeeting.title}</span></> : <span className="text-amber-300">لا يوجد أعضاء مسجلون حاليًا</span>}
             </p>
           </div>
         </div>
@@ -210,6 +206,7 @@ const DashboardContent: React.FC = () => {
             <Column1Quality />
           </div>
 
+          {members.length > 0 && <>
           {/* Column 2: Duration (Sky theme) */}
           <div className="w-[285px] shrink-0 h-full">
             <Column2Duration />
@@ -234,6 +231,7 @@ const DashboardContent: React.FC = () => {
           <div className="w-[335px] shrink-0 h-full">
             <Column6MeetingReport />
           </div>
+          </>}
         </div>
       </main>
 
