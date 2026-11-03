@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   build:
-    if: vars.VITE_SUPABASE_URL != '' && vars.VITE_SUPABASE_PUBLISHABLE_KEY != ''
+    if: vars.DEPLOY_PAGES == 'true' && vars.VITE_SUPABASE_URL != '' && vars.VITE_SUPABASE_PUBLISHABLE_KEY != ''
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
