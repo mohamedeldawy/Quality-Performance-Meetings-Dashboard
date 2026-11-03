@@ -113,9 +113,9 @@ async function ensureInitialized() {
       }]),
     });
   }
-  const state = await db("dashboard_state", "select=id& id=eq.1&limit=1");
+  const state = await db("dashboard_state", "select=id&id=eq.1&limit=1");
   if (!state?.length) {
-    const { INITIAL_MEMBERS } = await import("../../../src/data/initialData.ts");
+    const { INITIAL_MEMBERS } = await import("../_shared/initialData.ts");
     await db("dashboard_state", "", {
       method: "POST",
       headers: { Prefer: "return=minimal" },
@@ -231,7 +231,7 @@ Deno.serve(async (req: Request) => {
     }
     if (action === "reset") {
       requireManager(user);
-      const { INITIAL_MEMBERS } = await import("../../../src/data/initialData.ts");
+      const { INITIAL_MEMBERS } = await import("../_shared/initialData.ts");
       const current = await db("dashboard_state", "select=version&id=eq.1&limit=1");
       const version = Number(current?.[0]?.version || 1);
       const updated = await db("dashboard_state", `id=eq.1&version=eq.${version}`, {
