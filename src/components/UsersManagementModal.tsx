@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDashboard } from '../context/DashboardContext';
-import { Users, UserPlus, Trash2, KeyRound, Shield, Check, X, AlertCircle } from 'lucide-react';
+import { Users, UserPlus, Trash2, Pencil, Shield, Check, X, AlertCircle } from 'lucide-react';
 
 interface UsersManagementModalProps {
   isOpen: boolean;
@@ -17,7 +17,7 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
   const [role, setRole] = useState('Quality Engineer');
 
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [newPasswordValue, setNewPasswordValue] = useState('');
+  const [editValues, setEditValues] = useState({ name: '', username: '', password: '', role: '' });
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -42,12 +42,26 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
     setTimeout(() => setStatusMessage(null), 3000);
   };
 
-  const handleSavePassword = async (userId: string) => {
-    if (!newPasswordValue.trim()) return;
-    await updateUser(userId, { password: newPasswordValue.trim() });
+  const handleSaveUser = async (userId: string) => {
+    const nameValue = editValues.name.trim();
+    const usernameValue = editValues.username.trim();
+    const passwordValue = editValues.password.trim();
+    const roleValue = editValues.role.trim();
+    if (!nameValue || !usernameValue || !passwordValue || !roleValue) return;
+
+    if (users.some((user) => user.id !== userId && user.username.toLowerCase() === usernameValue.toLowerCase())) {
+      setStatusMessage('اسم المستخدم موجود بالفعل، يرجى اختيار اسم مستخدم آخر.');
+      return;
+    }
+
+    await updateUser(userId, {
+      name: nameValue,
+      username: usernameValue,
+      password: passwordValue,
+      role: roleValue,
+    });
     setEditingUserId(null);
-    setNewPasswordValue('');
-    setStatusMessage('تم تحديث كلمة المرور بنجاح!');
+    setStatusMessage('تم تحديث بيانات المستخدم بنجاح!');
     setTimeout(() => setStatusMessage(null), 3000);
   };
 
@@ -67,9 +81,9 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden" dir="rtl">
         {/* Modal Header */}
-        <div className="p-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
+        <div className="p-4 bg-blue-950 text-white border-b-2 border-amber-400 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-amber-400 text-slate-950 flex items-center justify-center">
               <Users className="w-4 h-4" />
             </div>
             <div>
@@ -83,7 +97,7 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowAddForm(!showAddForm)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-semibold transition-colors"
             >
               <UserPlus className="w-3.5 h-3.5" />
               <span>{showAddForm ? 'إلغاء الإضافة' : 'إضافة يوزر جديد'}</span>
@@ -109,7 +123,7 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
         <div className="p-4 overflow-y-auto space-y-4 flex-1">
           {/* Add New User Form */}
           {showAddForm && (
-            <form onSubmit={handleCreateUser} className="bg-slate-50 border border-indigo-200 rounded-xl p-4 space-y-3">
+            <form onSubmit={handleCreateUser} className="bg-blue-50/70 border border-blue-200 rounded-xl p-4 space-y-3">
               <div className="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
                 <UserPlus className="w-4 h-4 text-indigo-600" />
                 <span>إضافة مستخدم جديد وتحديد كلمة المرور:</span>
@@ -132,6 +146,7 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
                   <label className="block text-xs font-semibold text-slate-700 mb-1">الدور / المسمى الوظيفي</label>
                   <input
                     type="text"
+                    list="quality-role-options"
                     placeholder="مثال: Quality Lead أو Auditor"
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
@@ -183,6 +198,14 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
           )}
 
           {/* List of Registered Users */}
+          <datalist id="quality-role-options">
+            <option value="Quality Manager" />
+            <option value="Quality Lead" />
+            <option value="Senior Quality" />
+            <option value="Quality Engineer" />
+            <option value="Quality Auditor" />
+            <option value="QA Specialist" />
+          </datalist>
           <div className="space-y-2.5">
             <div className="text-xs font-bold text-slate-700">قائمة المستخدمين الحاليين:</div>
             
@@ -227,14 +250,14 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
                             setEditingUserId(null);
                           } else {
                             setEditingUserId(u.id);
-                            setNewPasswordValue(u.password);
+                            setEditValues({ name: u.name, username: u.username, password: u.password, role: u.role });
                           }
                         }}
                         className="flex items-center gap-1 px-2.5 py-1 bg-white border border-slate-300 hover:border-indigo-400 text-slate-700 hover:text-indigo-600 rounded-lg text-xs font-medium transition-colors"
-                        title="تغيير كلمة المرور"
+                        title="تعديل بيانات المستخدم"
                       >
-                        <KeyRound className="w-3.5 h-3.5" />
-                        <span>{isEditing ? 'إلغاء' : 'تغيير كلمة المرور'}</span>
+                        <Pencil className="w-3.5 h-3.5" />
+                        <span>{isEditing ? 'إلغاء' : 'تعديل البيانات'}</span>
                       </button>
 
                       {users.length > 1 && (
@@ -250,26 +273,59 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
                     </div>
                   </div>
 
-                  {/* Password Change Form */}
+                  {/* Full User Edit Form */}
                   {isEditing && (
-                    <div className="mt-3 pt-3 border-t border-slate-200/80 flex items-center gap-2 bg-white p-2.5 rounded-lg border border-indigo-200">
-                      <span className="text-xs font-semibold text-slate-700 whitespace-nowrap">
-                        كلمة المرور الجديدة:
-                      </span>
-                      <input
-                        type="text"
-                        value={newPasswordValue}
-                        onChange={(e) => setNewPasswordValue(e.target.value)}
-                        placeholder="اكتب الباسورد الجديد..."
-                        className="flex-1 text-xs p-1.5 bg-slate-50 border border-slate-300 rounded font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleSavePassword(u.id)}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold transition-colors"
-                      >
-                        حفظ
-                      </button>
+                    <div className="mt-3 pt-3 border-t border-slate-200/80 bg-white p-3 rounded-lg border border-indigo-200 space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label className="block text-[11px] font-semibold text-slate-700">
+                          الاسم الكامل
+                          <input
+                            required
+                            value={editValues.name}
+                            onChange={(e) => setEditValues({ ...editValues, name: e.target.value })}
+                            className="mt-1 w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </label>
+                        <label className="block text-[11px] font-semibold text-slate-700">
+                          المسمى الوظيفي
+                          <input
+                            required
+                            list="quality-role-options"
+                            value={editValues.role}
+                            onChange={(e) => setEditValues({ ...editValues, role: e.target.value })}
+                            className="mt-1 w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </label>
+                        <label className="block text-[11px] font-semibold text-slate-700">
+                          اسم المستخدم
+                          <input
+                            required
+                            value={editValues.username}
+                            onChange={(e) => setEditValues({ ...editValues, username: e.target.value })}
+                            className="mt-1 w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </label>
+                        <label className="block text-[11px] font-semibold text-slate-700">
+                          كلمة المرور
+                          <input
+                            required
+                            type="text"
+                            value={editValues.password}
+                            onChange={(e) => setEditValues({ ...editValues, password: e.target.value })}
+                            className="mt-1 w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </label>
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => handleSaveUser(u.id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-bold transition-colors"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          حفظ التعديلات
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

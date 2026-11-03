@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { QualityMemberReview, ActionItem, AppUser, DashboardSyncData, MeetingSession, SeniorityTier } from '../types/dashboard';
+import { QualityMemberProfile, QualityMemberReview, ActionItem, AppUser, DashboardSyncData, MeetingSession, SeniorityTier } from '../types/dashboard';
 import { INITIAL_MEMBERS, INITIAL_USERS } from '../data/initialData';
 
 interface DashboardContextType {
@@ -19,7 +19,8 @@ interface DashboardContextType {
   activeMeeting: MeetingSession;
   setActiveMemberId: (id: string) => void;
   setActiveMeetingId: (meetingId: string) => void;
-  addMember: (name: string, role?: string, seniority?: SeniorityTier) => void;
+  addMember: (name: string, role?: string, seniority?: SeniorityTier, profile?: QualityMemberProfile) => void;
+  updateMember: (id: string, updates: Partial<QualityMemberReview>) => void;
   updateMemberSeniority: (id: string, seniority: SeniorityTier) => void;
   deleteMember: (id: string) => void;
   addMeeting: (title?: string) => void;
@@ -136,8 +137,15 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               return {
                 id: m.id || `m-${idx}`,
                 name: m.name || `Member ${idx + 1}`,
-                role: m.role || 'Quality Engineer',
+                role: m.role === 'Frontend QA Specialist' ? '' : m.role || 'Quality Engineer',
                 seniority: inferredSeniority,
+                subject: m.subject || '',
+                stages: m.stages || '',
+                summaryGrades: m.summaryGrades || '',
+                quizGrades: m.quizGrades || '',
+                visualizationGrades: m.visualizationGrades || '',
+                courseCount: Number(m.courseCount) || 0,
+                photoUrl: m.photoUrl || '',
                 meetings: [defaultMtg],
                 activeMeetingId: defaultMtg.id,
                 lastUpdatedBy: m.lastUpdatedBy || 'النظام',
@@ -147,8 +155,15 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             return {
               id: m.id || `m-${idx}`,
               name: m.name || `Member ${idx + 1}`,
-              role: m.role || 'Quality Engineer',
+              role: m.role === 'Frontend QA Specialist' ? '' : m.role || 'Quality Engineer',
               seniority: inferredSeniority,
+              subject: m.subject || '',
+              stages: m.stages || '',
+              summaryGrades: m.summaryGrades || '',
+              quizGrades: m.quizGrades || '',
+              visualizationGrades: m.visualizationGrades || '',
+              courseCount: Number(m.courseCount) || 0,
+              photoUrl: m.photoUrl || '',
               meetings: m.meetings.map((mtg: any, mIdx: number) => ({
                 id: mtg.id || `mtg-${mIdx}`,
                 title: mtg.title || `Meeting ${mIdx + 1}`,
@@ -372,7 +387,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   // Member Management
-  const addMember = (name: string, role = 'Quality Engineer', seniority: SeniorityTier = 'Middle') => {
+  const addMember = (name: string, role = 'Quality Engineer', seniority: SeniorityTier = 'Middle', profile: QualityMemberProfile = {}) => {
     if (!name.trim()) return;
     const authorName = currentUser ? currentUser.name : 'مستخدم الداشبورد';
     const initialMtgId = `mtg-${Date.now()}`;
@@ -398,6 +413,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       name: name.trim(),
       role: role.trim() || 'Quality Engineer',
       seniority,
+      ...profile,
       meetings: [defaultMeeting],
       activeMeetingId: initialMtgId,
       lastUpdatedBy: authorName,
@@ -408,6 +424,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setMembers(updated);
     setActiveMemberId(newMember.id);
     pushToServer(updated, newMember.id);
+  };
+
+  const updateMember = (id: string, updates: Partial<QualityMemberReview>) => {
+    const updated = members.map((member) => (member.id === id ? { ...member, ...updates } : member));
+    setMembers(updated);
+    pushToServer(updated);
   };
 
   const updateMemberSeniority = (id: string, seniority: SeniorityTier) => {
@@ -761,6 +783,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         setActiveMemberId,
         setActiveMeetingId,
         addMember,
+        updateMember,
         updateMemberSeniority,
         deleteMember,
         addMeeting,

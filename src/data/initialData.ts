@@ -134,7 +134,7 @@ export const INITIAL_MEMBERS: QualityMemberReview[] = [
   {
     id: 'm2',
     name: 'سارة محمود',
-    role: 'Frontend QA Specialist',
+    role: '',
     seniority: 'Middle',
     lastUpdatedBy: 'أ/ رضوى',
     lastUpdatedAt: 'اليوم، 01:40 م',

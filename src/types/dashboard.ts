@@ -61,7 +61,17 @@ export interface MeetingSession {
 
 export type SeniorityTier = 'Junior' | 'Middle' | 'Senior';
 
-export interface QualityMemberReview {
+export interface QualityMemberProfile {
+  subject?: string;
+  stages?: string;
+  summaryGrades?: string;
+  quizGrades?: string;
+  visualizationGrades?: string;
+  courseCount?: number;
+  photoUrl?: string;
+}
+
+export interface QualityMemberReview extends QualityMemberProfile {
   id: string;
   name: string;
   role: string;

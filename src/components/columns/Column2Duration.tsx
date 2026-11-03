@@ -18,11 +18,11 @@ export const Column2Duration: React.FC = () => {
   const remainingDays = diffDays % 7;
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-xl border border-sky-200 shadow-sm overflow-hidden">
+    <div className="flex flex-col h-full bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden">
       {/* Column Header (Sky / Slate Theme) */}
-      <div className="p-3 bg-gradient-to-r from-sky-950 via-slate-900 to-sky-900 text-white flex items-center justify-between border-b border-sky-800/80 shrink-0">
+      <div className="p-3 bg-gradient-to-r from-blue-950 via-slate-950 to-blue-900 text-white flex items-center justify-between border-b border-amber-400/80 shrink-0">
         <div className="flex items-center gap-2">
-          <span className="w-5 h-5 rounded-full bg-sky-500 text-white flex items-center justify-center text-[11px] font-mono font-bold shadow-xs">
+          <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-[11px] font-mono font-bold shadow-xs">
             2
           </span>
           <h2 className="text-xs font-bold tracking-wide">Duration</h2>
@@ -37,8 +37,8 @@ export const Column2Duration: React.FC = () => {
       </div>
 
       {/* English Subtitle */}
-      <div className="px-3 py-1.5 bg-sky-50/80 border-b border-sky-100 flex items-center justify-between shrink-0">
-        <span className="text-[10px] font-semibold tracking-wide text-sky-900 font-sans truncate">
+      <div className="px-3 py-1.5 bg-blue-50/90 border-b border-blue-100 flex items-center justify-between shrink-0">
+        <span className="text-[10px] font-semibold tracking-wide text-blue-950 font-sans truncate">
           Performance Evaluation Timeframe & Assessment Window
         </span>
       </div>

@@ -29,15 +29,15 @@ export const LoginScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 via-slate-950 to-sky-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
         {/* Top Header */}
-        <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 text-center text-white relative border-b border-indigo-900/60">
-          <div className="mx-auto w-16 h-16 bg-white rounded-2xl p-1.5 shadow-lg mb-3 flex items-center justify-center">
+        <div className="bg-gradient-to-r from-blue-950 via-slate-950 to-blue-900 p-6 text-center text-white relative border-b-2 border-amber-400">
+          <div className="mx-auto w-16 h-16 bg-sky-500 rounded-lg border-2 border-amber-400 shadow-lg mb-3 overflow-hidden flex items-center justify-center">
             <img
               src="./logo.png"
-              alt="لوجو منصة الخطة"
-              className="w-full h-full object-contain"
+              alt="شعار"
+              className="w-full h-full object-cover"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 if (!target.src.includes('logopng-omega.vercel.app')) {
@@ -47,7 +47,7 @@ export const LoginScreen: React.FC = () => {
             />
           </div>
           <h1 className="text-base sm:text-lg font-black tracking-tight text-white">
-            الخطة Quality Performance Meetings Dashboard
+            Quality Performance Meetings Dashboard
           </h1>
           <p className="text-xs text-indigo-300 font-medium mt-1">
             تسجيل الدخول للنظام وإدارة اجتماعات تقييم الأداء

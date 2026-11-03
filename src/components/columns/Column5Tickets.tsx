@@ -30,11 +30,11 @@ export const Column5Tickets: React.FC = () => {
   const pendingCount = actions.filter((a) => !a.done).length;
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-xl border border-emerald-200 shadow-sm overflow-hidden">
+    <div className="flex flex-col h-full bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden">
       {/* Column Header (Emerald / Teal Slate Theme) */}
-      <div className="p-3 bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-900 text-white flex items-center justify-between border-b border-emerald-800/80 shrink-0">
+      <div className="p-3 bg-gradient-to-r from-blue-950 via-slate-950 to-blue-900 text-white flex items-center justify-between border-b border-amber-400/80 shrink-0">
         <div className="flex items-center gap-2">
-          <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[11px] font-mono font-bold shadow-xs">
+          <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-[11px] font-mono font-bold shadow-xs">
             5
           </span>
           <h2 className="text-xs font-bold tracking-wide">Tickets Screen</h2>
@@ -49,8 +49,8 @@ export const Column5Tickets: React.FC = () => {
       </div>
 
       {/* English Subtitle */}
-      <div className="px-3 py-1.5 bg-emerald-50/80 border-b border-emerald-100 flex items-center justify-between shrink-0">
-        <span className="text-[10px] font-semibold tracking-wide text-emerald-900 font-sans truncate">
+      <div className="px-3 py-1.5 bg-blue-50/90 border-b border-blue-100 flex items-center justify-between shrink-0">
+        <span className="text-[10px] font-semibold tracking-wide text-blue-950 font-sans truncate">
           Open Tickets, Bug Review & QA Action Items
         </span>
       </div>

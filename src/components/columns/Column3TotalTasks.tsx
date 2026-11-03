@@ -48,10 +48,10 @@ export const Column3TotalTasks: React.FC = () => {
     <div
       onPaste={handlePaste}
       tabIndex={0}
-      className="flex flex-col h-full bg-white rounded-xl border border-amber-200 shadow-sm overflow-hidden focus:outline-none"
+      className="flex flex-col h-full bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden focus:outline-none"
     >
       {/* Column Header (Amber / Orange Slate Theme) */}
-      <div className="p-3 bg-gradient-to-r from-amber-950 via-slate-900 to-amber-900 text-white flex items-center justify-between border-b border-amber-800/80 shrink-0">
+      <div className="p-3 bg-gradient-to-r from-blue-950 via-slate-950 to-blue-900 text-white flex items-center justify-between border-b border-amber-400/80 shrink-0">
         <div className="flex items-center gap-2">
           <span className="w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center text-[11px] font-mono font-bold shadow-xs">
             3

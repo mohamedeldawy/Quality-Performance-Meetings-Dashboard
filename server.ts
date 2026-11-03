@@ -57,6 +57,7 @@ if (fs.existsSync(DB_FILE)) {
     // Ensure members have seniority if migrating from older schema
     serverState.members = (serverState.members || []).map((m: any) => ({
       ...m,
+      role: m.role === 'Frontend QA Specialist' ? '' : m.role || 'Quality Engineer',
       seniority: m.seniority || (m.role?.toLowerCase().includes('lead') || m.role?.toLowerCase().includes('senior') ? 'Senior' : m.role?.toLowerCase().includes('junior') ? 'Junior' : 'Middle'),
     }));
     console.log('[Server] Loaded persistent database from disk.');

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
-import { SeniorityTier } from '../../types/dashboard';
+import { QualityMemberProfile, SeniorityTier } from '../../types/dashboard';
 import {
   Plus,
   Trash2,
@@ -11,8 +11,40 @@ import {
   Users,
   ChevronDown,
   Sparkles,
-  ShieldAlert,
+  ImagePlus,
+  Pencil,
 } from 'lucide-react';
+
+type MemberFormValues = QualityMemberProfile & {
+  name: string;
+  role: string;
+  seniority: SeniorityTier;
+};
+
+const prepareMemberImage = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const image = new Image();
+      image.onload = () => {
+        const scale = Math.min(1, 480 / Math.max(image.width, image.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext('2d');
+        if (!context) {
+          reject(new Error('تعذر تجهيز الصورة'));
+          return;
+        }
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.78));
+      };
+      image.onerror = () => reject(new Error('تعذر قراءة الصورة'));
+      image.src = String(reader.result);
+    };
+    reader.onerror = () => reject(new Error('تعذر قراءة الصورة'));
+    reader.readAsDataURL(file);
+  });
 
 export const Column1Quality: React.FC = () => {
   const {
@@ -23,6 +55,7 @@ export const Column1Quality: React.FC = () => {
     activeMeeting,
     setActiveMeetingId,
     addMember,
+    updateMember,
     deleteMember,
     addMeeting,
     deleteMeeting,
@@ -36,9 +69,20 @@ export const Column1Quality: React.FC = () => {
   // State to toggle between showing only the active member vs showing the tier's members list
   const [isChangingMember, setIsChangingMember] = useState(false);
   const [showAddMemberForm, setShowAddMemberForm] = useState(false);
-  const [memberName, setMemberName] = useState('');
-  const [memberRole, setMemberRole] = useState('');
-  const [formSeniority, setFormSeniority] = useState<SeniorityTier>('Senior');
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [memberForm, setMemberForm] = useState<MemberFormValues>({
+    name: '',
+    role: '',
+    seniority: 'Senior',
+    subject: '',
+    stages: '',
+    summaryGrades: '',
+    quizGrades: '',
+    visualizationGrades: '',
+    courseCount: 0,
+    photoUrl: '',
+  });
+  const [imageError, setImageError] = useState('');
 
   // Filter members based on selected tier
   const tierMembers = useMemo(() => {
@@ -69,24 +113,48 @@ export const Column1Quality: React.FC = () => {
 
   const handleAddMember = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!memberName.trim()) return;
-    addMember(memberName.trim(), memberRole.trim() || undefined, formSeniority);
-    setSelectedTier(formSeniority);
-    setMemberName('');
-    setMemberRole('');
+    if (!memberForm.name.trim()) return;
+    const { name, role, seniority, ...profile } = memberForm;
+    if (editingMemberId) {
+      updateMember(editingMemberId, { name: name.trim(), role: role.trim() || 'Quality Engineer', seniority, ...profile });
+    } else {
+      addMember(name.trim(), role.trim() || undefined, seniority, profile);
+    }
+    setSelectedTier(seniority);
     setShowAddMemberForm(false);
+    setEditingMemberId(null);
+    setImageError('');
     setIsChangingMember(false);
+  };
+
+  const startEditingMember = () => {
+    if (!activeMember) return;
+    setMemberForm({
+      name: activeMember.name,
+      role: activeMember.role,
+      seniority: activeMember.seniority || selectedTier,
+      subject: activeMember.subject || '',
+      stages: activeMember.stages || '',
+      summaryGrades: activeMember.summaryGrades || '',
+      quizGrades: activeMember.quizGrades || '',
+      visualizationGrades: activeMember.visualizationGrades || '',
+      courseCount: activeMember.courseCount || 0,
+      photoUrl: activeMember.photoUrl || '',
+    });
+    setEditingMemberId(activeMember.id);
+    setShowAddMemberForm(true);
+    setImageError('');
   };
 
   // Helper for English meetings header
   const meetingsHeaderTitle = `Meetings ${activeMember?.name || 'Member'}`;
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-xl border border-indigo-200 shadow-sm overflow-hidden">
+    <div className="flex flex-col h-full bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden">
       {/* Column Header (Indigo / Purple theme) */}
-      <div className="p-3 bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-900 text-white flex items-center justify-between border-b border-indigo-800/80 shrink-0">
+      <div className="p-3 bg-gradient-to-r from-blue-950 via-slate-950 to-blue-900 text-white flex items-center justify-between border-b border-amber-400/80 shrink-0">
         <div className="flex items-center gap-2">
-          <span className="w-5 h-5 rounded-full bg-indigo-500 text-white flex items-center justify-center text-[11px] font-mono font-bold shadow-xs">
+          <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center text-[11px] font-mono font-bold shadow-xs">
             1
           </span>
           <h2 className="text-xs font-bold tracking-wide">Quality</h2>
@@ -94,10 +162,22 @@ export const Column1Quality: React.FC = () => {
 
         <button
           onClick={() => {
-            setFormSeniority(selectedTier);
+            setEditingMemberId(null);
+            setMemberForm({
+              name: '',
+              role: '',
+              seniority: selectedTier,
+              subject: '',
+              stages: '',
+              summaryGrades: '',
+              quizGrades: '',
+              visualizationGrades: '',
+              courseCount: 0,
+              photoUrl: '',
+            });
             setShowAddMemberForm(!showAddMemberForm);
           }}
-          className="flex items-center gap-1 px-2 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[11px] font-semibold transition-colors shadow-xs"
+          className="flex items-center gap-1 px-2 py-1 bg-blue-700 hover:bg-blue-800 text-white rounded text-[11px] font-semibold transition-colors shadow-xs"
           title="إضافة عضو كواليتي جديد"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -106,8 +186,8 @@ export const Column1Quality: React.FC = () => {
       </div>
 
       {/* English Subtitle */}
-      <div className="px-3 py-1.5 bg-indigo-50/80 border-b border-indigo-100 flex items-center justify-between shrink-0">
-        <span className="text-[10px] font-semibold tracking-wide text-indigo-900 font-sans">
+      <div className="px-3 py-1.5 bg-blue-50/90 border-b border-blue-100 flex items-center justify-between shrink-0">
+        <span className="text-[10px] font-semibold tracking-wide text-blue-950 font-sans">
           Team Members & Monthly Performance Meetings
         </span>
         <span className="text-[9px] font-mono px-1.5 py-0.5 bg-white/90 text-indigo-700 border border-indigo-200 rounded font-bold">
@@ -159,12 +239,12 @@ export const Column1Quality: React.FC = () => {
         {showAddMemberForm && (
           <form
             onSubmit={handleAddMember}
-            className="bg-indigo-50/60 p-3 rounded-lg border border-indigo-200 space-y-2 shadow-2xs"
+            className="bg-blue-50/70 p-3 rounded-lg border border-blue-200 space-y-2 shadow-2xs"
           >
-            <div className="flex items-center justify-between text-xs font-bold text-indigo-950">
+            <div className="flex items-center justify-between text-xs font-bold text-blue-950">
               <span className="flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                <span>إضافة عضو كواليتي جديد:</span>
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>{editingMemberId ? 'تعديل ملف عضو الجودة:' : 'إضافة عضو جودة جديد:'}</span>
               </span>
             </div>
             <div>
@@ -173,9 +253,9 @@ export const Column1Quality: React.FC = () => {
                 type="text"
                 required
                 placeholder="مثال: أحمد حسن"
-                value={memberName}
-                onChange={(e) => setMemberName(e.target.value)}
-                className="w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 font-sans"
+                value={memberForm.name}
+                onChange={(e) => setMemberForm({ ...memberForm, name: e.target.value })}
+                className="w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans"
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -183,18 +263,18 @@ export const Column1Quality: React.FC = () => {
                 <label className="block text-[11px] font-semibold text-slate-700 mb-1">المسمى الوظيفي</label>
                 <input
                   type="text"
-                  placeholder="مثال: Quality Lead"
-                  value={memberRole}
-                  onChange={(e) => setMemberRole(e.target.value)}
-                  className="w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 font-sans"
+                  placeholder="مثال: أخصائي جودة"
+                  value={memberForm.role}
+                  onChange={(e) => setMemberForm({ ...memberForm, role: e.target.value })}
+                  className="w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans"
                 />
               </div>
               <div>
                 <label className="block text-[11px] font-semibold text-slate-700 mb-1">المستوى (Tier) *</label>
                 <select
-                  value={formSeniority}
-                  onChange={(e) => setFormSeniority(e.target.value as SeniorityTier)}
-                  className="w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-indigo-500 font-sans"
+                  value={memberForm.seniority}
+                  onChange={(e) => setMemberForm({ ...memberForm, seniority: e.target.value as SeniorityTier })}
+                  className="w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans"
                 >
                   <option value="Junior">Junior</option>
                   <option value="Middle">Middle</option>
@@ -202,11 +282,103 @@ export const Column1Quality: React.FC = () => {
                 </select>
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="block text-[11px] font-semibold text-slate-700">
+                المادة
+                <input
+                  value={memberForm.subject}
+                  onChange={(e) => setMemberForm({ ...memberForm, subject: e.target.value })}
+                  placeholder="مثال: الرياضيات"
+                  className="mt-1 w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </label>
+              <label className="block text-[11px] font-semibold text-slate-700">
+                المراحل الدراسية
+                <input
+                  value={memberForm.stages}
+                  onChange={(e) => setMemberForm({ ...memberForm, stages: e.target.value })}
+                  placeholder="مثال: إعدادي وثانوي"
+                  className="mt-1 w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </label>
+              <label className="block text-[11px] font-semibold text-slate-700">
+                ملخصات أي صفوف؟
+                <input
+                  value={memberForm.summaryGrades}
+                  onChange={(e) => setMemberForm({ ...memberForm, summaryGrades: e.target.value })}
+                  placeholder="مثال: الأول والثاني الثانوي"
+                  className="mt-1 w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </label>
+              <label className="block text-[11px] font-semibold text-slate-700">
+                التصورات لأي صفوف؟
+                <input
+                  value={memberForm.visualizationGrades}
+                  onChange={(e) => setMemberForm({ ...memberForm, visualizationGrades: e.target.value })}
+                  placeholder="حدد الصفوف الدراسية"
+                  className="mt-1 w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </label>
+              <label className="block text-[11px] font-semibold text-slate-700">
+                كويزات أي صفوف؟
+                <input
+                  value={memberForm.quizGrades}
+                  onChange={(e) => setMemberForm({ ...memberForm, quizGrades: e.target.value })}
+                  placeholder="حدد الصفوف الدراسية"
+                  className="mt-1 w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </label>
+            </div>
+            <div className="grid grid-cols-2 gap-2 items-end">
+              <label className="block text-[11px] font-semibold text-slate-700">
+                عدد الكورسات المسؤول عنها
+                <input
+                  type="number"
+                  min="0"
+                  value={memberForm.courseCount}
+                  onChange={(e) => setMemberForm({ ...memberForm, courseCount: Number(e.target.value) })}
+                  className="mt-1 w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </label>
+              <div>
+                <label className="flex items-center justify-center gap-1.5 w-full p-2 bg-white border border-slate-300 rounded text-[11px] font-semibold text-blue-800 cursor-pointer hover:bg-blue-50">
+                  <ImagePlus className="w-4 h-4" />
+                  {memberForm.photoUrl ? 'تغيير الصورة' : 'إضافة صورة'}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const photoUrl = await prepareMemberImage(file);
+                        setMemberForm((current) => ({ ...current, photoUrl }));
+                        setImageError('');
+                      } catch {
+                        setImageError('تعذر تحميل الصورة، جرّب ملفًا آخر.');
+                      }
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                {memberForm.photoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setMemberForm({ ...memberForm, photoUrl: '' })}
+                    className="mt-1 text-[10px] text-rose-600 hover:text-rose-700"
+                  >
+                    إزالة الصورة
+                  </button>
+                )}
+              </div>
+            </div>
+            {imageError && <p className="text-[10px] text-rose-600">{imageError}</p>}
             <button
               type="submit"
-              className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-bold transition-colors"
+              className="w-full py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded text-xs font-bold transition-colors"
             >
-              حفظ وإضافة العضو
+              {editingMemberId ? 'حفظ تعديلات العضو' : 'حفظ وإضافة العضو'}
             </button>
           </form>
         )}
@@ -229,29 +401,61 @@ export const Column1Quality: React.FC = () => {
               </button>
             </div>
 
-            <div className="p-3 bg-gradient-to-br from-indigo-50/90 to-slate-50 border-2 border-indigo-400 rounded-xl shadow-xs relative">
+            <div className="p-3 bg-gradient-to-br from-blue-50 to-white border-2 border-blue-300 rounded-xl shadow-xs relative">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
-                    {activeMember.name.slice(0, 2)}
+                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-slate-950 border-2 border-amber-400 shadow-md shrink-0 flex items-center justify-center">
+                    {activeMember.photoUrl ? (
+                      <img src={activeMember.photoUrl} alt={activeMember.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-white font-bold text-lg">{activeMember.name.slice(0, 2)}</span>
+                    )}
                   </div>
                   <div className="min-w-0">
                     <div className="text-sm font-extrabold text-slate-900 truncate flex items-center gap-1.5">
                       <span>{activeMember.name}</span>
-                      <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
+                      <CheckCircle2 className="w-4 h-4 text-blue-700 shrink-0" />
                     </div>
                     <div className="text-[11px] text-slate-600 font-medium truncate">
-                      {activeMember.role}
+                      {activeMember.role || 'بدون مسمى وظيفي'}
+                    </div>
+                    <div className="text-[10px] text-blue-800 font-semibold truncate mt-1">
+                      {activeMember.subject || 'لم تُحدد المادة'}
                     </div>
                   </div>
                 </div>
 
                 <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-600 text-white font-mono shadow-2xs">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-800 text-white font-mono shadow-2xs">
                     {activeMember.seniority || selectedTier}
                   </span>
                   <span className="text-[10px] text-slate-500 font-mono">
                     {activeMember.meetings.length} ميتنج
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-3 pt-2 border-t border-blue-200/80 space-y-1.5 text-[11px]">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-slate-500 shrink-0">المراحل الدراسية</span>
+                  <span className="text-slate-800 font-semibold text-left">{activeMember.stages || 'غير محددة'}</span>
+                </div>
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-slate-500 shrink-0">ملخصات</span>
+                  <span className="text-slate-800 font-semibold text-left">{activeMember.summaryGrades || 'غير محددة'}</span>
+                </div>
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-slate-500 shrink-0">الكويزات</span>
+                  <span className="text-slate-800 font-semibold text-left">{activeMember.quizGrades || 'غير محددة'}</span>
+                </div>
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-slate-500 shrink-0">التصورات</span>
+                  <span className="text-slate-800 font-semibold text-left">{activeMember.visualizationGrades || 'غير محددة'}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-blue-100">
+                  <span className="text-blue-900 font-bold">الكورسات المسؤول عنها</span>
+                  <span className="min-w-7 text-center px-2 py-0.5 rounded bg-amber-100 text-slate-900 font-bold">
+                    {activeMember.courseCount ?? 0}
                   </span>
                 </div>
               </div>
@@ -265,6 +469,15 @@ export const Column1Quality: React.FC = () => {
                 >
                   <Users className="w-3 h-3" />
                   <span>تبديل العضو من قائمة {selectedTier}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={startEditingMember}
+                  className="p-1 text-blue-700 hover:text-blue-900 transition-colors"
+                  title="تعديل بيانات العضو"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
                 </button>
 
                 {members.length > 1 && (
@@ -309,7 +522,7 @@ export const Column1Quality: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      setFormSeniority(selectedTier);
+                      setMemberForm((current) => ({ ...current, seniority: selectedTier }));
                       setShowAddMemberForm(true);
                     }}
                     className="px-2.5 py-1 bg-indigo-600 text-white rounded text-xs font-bold"
