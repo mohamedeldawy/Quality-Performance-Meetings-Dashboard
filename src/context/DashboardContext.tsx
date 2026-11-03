@@ -60,7 +60,6 @@ interface DashboardContextType {
   updateMeetingReportNotes: (notes: string) => void;
   updateMeetingReportRecipient: (recipient: string) => void;
   updateDepartmentReport: (department: string, fileUrl: string | null, fileName?: string, fileSize?: string) => void;
-  updateDepartmentReport: (department: string, fileUrl: string | null, fileName?: string, fileSize?: string) => void;
 
   resetToDefaults: () => Promise<void>;
 }
