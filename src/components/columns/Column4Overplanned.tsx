@@ -12,7 +12,7 @@ export const Column4Overplanned: React.FC = () => {
     deleteOverplannedAction,
     addOverplannedDepartmentAction,
     deleteOverplannedDepartmentAction,
-    setOverplannedNoAction,
+    setOverplannedNoAction, setOverplannedDepartmentsNoAction,
   } = useDashboard();
 
   const [newActionText, setNewActionText] = useState('');
@@ -25,6 +25,7 @@ export const Column4Overplanned: React.FC = () => {
   const discussion = activeMeeting.overplannedNegotiation?.discussionNotes || '';
   const actions = activeMeeting.overplannedNegotiation?.actions || [];
   const departments = activeMeeting.overplannedNegotiation?.departmentsActions || [];
+  const noDepartmentActions = activeMeeting.overplannedNegotiation?.departmentsNoAction || false;
   const noAction = activeMeeting.overplannedNegotiation?.noAction || false;
   const departmentOptions = ['Operation', 'Data Entry', 'Video Edit', 'Technical'];
 
@@ -178,11 +179,14 @@ export const Column4Overplanned: React.FC = () => {
         </div>
         <div className="pt-3 border-t border-slate-200 space-y-2">
           <div className="text-xs font-bold text-slate-800">Departments Actions</div>
-          <form onSubmit={(event) => { event.preventDefault(); addOverplannedDepartmentAction(selectedDepartment, departmentDueDate); }} className="space-y-2 rounded-lg border border-rose-200 bg-rose-50/50 p-2">
+          <label className="flex items-center gap-2 text-xs font-semibold text-slate-700"><input type="checkbox" checked={noDepartmentActions} onChange={(event) => setOverplannedDepartmentsNoAction(event.target.checked)} className="rounded" /> لا يوجد Department Actions</label>
+          {!noDepartmentActions && <>
+                    <form onSubmit={(event) => { event.preventDefault(); addOverplannedDepartmentAction(selectedDepartment, departmentDueDate); }} className="space-y-2 rounded-lg border border-rose-200 bg-rose-50/50 p-2">
             <select value={selectedDepartment} onChange={(event) => setSelectedDepartment(event.target.value)} className="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs">{departmentOptions.map((department) => <option key={department} value={department}>{department}</option>)}</select>
             <div className="flex items-center gap-2"><input required type="date" value={departmentDueDate} onChange={(event) => setDepartmentDueDate(event.target.value)} className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white p-2 text-xs" /><button type="submit" className="rounded-lg bg-rose-600 px-3 py-2 text-xs font-bold text-white"><Plus className="inline h-3 w-3" /> Add Action</button></div>
           </form>
           <div className="space-y-1.5">{departments.map((item) => <div key={item.id} className="flex items-center justify-between gap-2 rounded-lg border bg-white p-2 text-[11px]"><span className="font-semibold">{item.department}</span><span>Due: {item.dueDate || '-'}</span><button type="button" onClick={() => deleteOverplannedDepartmentAction(item.id)} className="text-rose-600"><Trash2 className="h-3.5 w-3.5" /></button></div>)}</div>
+          </>
         </div>
       </div>
 
