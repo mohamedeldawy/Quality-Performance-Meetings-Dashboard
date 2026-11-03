@@ -42,7 +42,7 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({ label, value,
     document.addEventListener('mousedown', closeOnOutsideClick);
     return () => document.removeEventListener('mousedown', closeOnOutsideClick);
   }, []);
-  const filteredOptions = useMemo((
+  const filteredOptions = useMemo(
     () => options.filter((option) => option.toLowerCase().includes(query.trim().toLowerCase())),
     [options, query]
   );
