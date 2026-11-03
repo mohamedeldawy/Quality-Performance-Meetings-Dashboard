@@ -95,14 +95,6 @@ const uploadDashboardImage = async (dataUrl: string | undefined, folder: 'member
   return result.publicUrl;
 };
 
-const uploadDashboardImage = async (dataUrl: string | undefined, folder: 'members' | 'users'): Promise<string> => {
-  if (!dataUrl || !dataUrl.startsWith('data:image/')) return dataUrl || '';
-  const response = await apiRequest('image-upload', { dataUrl, folder });
-  const result = await response.json();
-  if (!response.ok || !result.publicUrl) throw new Error(result.error || 'تعذر حفظ الصورة على السيرفر');
-  return result.publicUrl;
-};
-
 const cleanMeetingTitle = (title: string) => title.replace(/\s*\(فحص الشاشات والتسجيل\)/g, '').trim();
 
 const normalizeMemberProfile = (member: QualityMemberReview): QualityMemberReview => ({
