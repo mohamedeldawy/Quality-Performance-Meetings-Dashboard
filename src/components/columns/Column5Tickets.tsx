@@ -10,6 +10,8 @@ export const Column5Tickets: React.FC = () => {
     addTicketsAction,
     toggleTicketsAction,
     deleteTicketsAction,
+    updateTicketsDepartments,
+    setTicketsNoAction,
   } = useDashboard();
 
   const [newActionText, setNewActionText] = useState('');
@@ -19,6 +21,9 @@ export const Column5Tickets: React.FC = () => {
 
   const discussion = activeMeeting.ticketsScreen?.discussionNotes || '';
   const actions = activeMeeting.ticketsScreen?.actions || [];
+  const departments = activeMeeting.ticketsScreen?.departmentsActions || [];
+  const noAction = activeMeeting.ticketsScreen?.noAction || false;
+  const departmentOptions = ['Operation', 'Data Entry', 'Video Edit', 'Technical'];
 
   const handleAddAction = (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +61,7 @@ export const Column5Tickets: React.FC = () => {
           <label className="block text-xs font-bold text-slate-800 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
               <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
-              <span>1. خانة النيجوشيشن (Discussion):</span>
+              <span>1. Quality Discussion:</span>
             </span>
             <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
               حفظ فوري
@@ -76,7 +81,7 @@ export const Column5Tickets: React.FC = () => {
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
               <CheckSquare className="w-3.5 h-3.5 text-emerald-600" />
-              <span>2. خانة الأكشنز (Actions for tickets):</span>
+              <span>2. Quality Actions For Tickets:</span>
             </label>
             <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-mono font-bold border border-emerald-200">
               {pendingCount} متبقي
@@ -84,12 +89,14 @@ export const Column5Tickets: React.FC = () => {
           </div>
 
           {/* Add Action Form */}
-          <form onSubmit={handleAddAction} className="bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-200 space-y-2">
+          <label className="flex items-center gap-2 text-xs font-semibold text-slate-700"><input type="checkbox" checked={noAction} onChange={(e) => setTicketsNoAction(e.target.checked)} className="rounded" /> لا يوجد — لن يتم اتخاذ أي Action</label>
+          <form onSubmit={handleAddAction className="bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-200 space-y-2">
             <input
               type="text"
               required
               placeholder="اكتب الأكشن المطلوب للتيكتس والبلاغات..."
               value={newActionText}
+              disabled={noAction}
               onChange={(e) => setNewActionText(e.target.value)}
               className="w-full text-xs p-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
@@ -103,6 +110,7 @@ export const Column5Tickets: React.FC = () => {
               />
               <button
                 type="submit"
+                disabled={noAction}
                 className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 shrink-0 transition-colors shadow-2xs"
               >
                 <Plus className="w-3 h-3" />
@@ -163,6 +171,17 @@ export const Column5Tickets: React.FC = () => {
                 </div>
               ))
             )}
+          </div>
+        </div>
+        <div className="pt-3 border-t border-slate-200 space-y-2">
+          <div className="text-xs font-bold text-slate-800">Departments Actions</div>
+          <div className="grid grid-cols-2 gap-2">
+            {departmentOptions.map((department) => (
+              <label key={department} className="flex items-center gap-2 text-[11px] text-slate-700 bg-slate-50 border border-slate-200 rounded-lg p-2">
+                <input type="checkbox" checked={departments.includes(department)} onChange={(e) => updateTicketsDepartments(e.target.checked ? [...departments, department] : departments.filter((item) => item !== department))} />
+                {department}
+              </label>
+            ))}
           </div>
         </div>
       </div>
