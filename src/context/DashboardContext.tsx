@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { QualityMemberProfile, QualityMemberReview, ActionItem, AppUser, DashboardSyncData, MeetingSession, SeniorityTier } from '../types/dashboard';
-import { INITIAL_MEMBERS, INITIAL_USERS } from '../data/initialData';
+import { INITIAL_MEMBERS } from '../data/initialData';
 
 interface DashboardContextType {
   // Authentication & Users
@@ -254,7 +254,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         if (json.success && json.data) {
           const remoteData: DashboardSyncData = json.data;
 
-          if (remoteData.version > versionRef.current && !isSavingRef.current) {
+          if (remoteData.version >= versionRef.current && !isSavingRef.current) {
             versionRef.current = remoteData.version;
             if (Array.isArray(remoteData.members) && remoteData.members.length > 0) {
               setMembers(remoteData.members.map(normalizeMemberProfile));
@@ -326,6 +326,21 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       })
       .catch(() => { if (active) setSyncStatus('offline'); });
     return () => { active = false; };
+  }, []);
+
+  // Poll shared state so edits from other team members appear automatically.
+  useEffect(() => {
+    if (!currentUser) return;
+    const timer = window.setInterval(() => { void refreshFromServer(); }, 5000);
+    return () => window.clearInterval(timer);
+  }, [currentUser]);
+
+  // Remove legacy browser-stored credentials from earlier versions.
+  useEffect(() => {
+    localStorage.removeItem(USERS_STORAGE_KEY);
+    localStorage.removeItem('quality_team_users_v2');
+    localStorage.removeItem(AUTH_SESSION_KEY);
+    localStorage.removeItem('quality_team_auth_session_v1');
   }, []);
 
   // Update current member's ACTIVE MEETING
