@@ -65,6 +65,7 @@ interface DashboardContextType {
   updateDepartmentReport: (department: string, fileUrl: string | null, fileName?: string, fileSize?: string) => void;
   updateQualityReport: (fileUrl: string | null, fileName?: string, fileSize?: string) => void;
   updateSummaryReport: (fileUrl: string | null, fileName?: string, fileSize?: string) => void;
+  updateSummaryReport: (fileUrl: string | null, fileName?: string, fileSize?: string) => void;
 
   resetToDefaults: () => Promise<void>;
 }
@@ -736,6 +737,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const updateQualityReport = (fileUrl: string | null, fileName?: string, fileSize?: string) => updateCurrentMeeting((prev) => ({ ...prev, meetingReport: { ...prev.meetingReport, fileUrl: prev.meetingReport?.fileUrl || null, qualityReport: fileUrl ? { fileUrl, fileName, fileSize, uploadedAt: new Date().toLocaleDateString('en-US') } : null } }));
+  const updateSummaryReport = (fileUrl: string | null, fileName?: string, fileSize?: string) => updateCurrentMeeting((prev) => ({ ...prev, meetingReport: { ...prev.meetingReport, fileUrl: prev.meetingReport?.fileUrl || null, summaryReport: fileUrl ? { fileUrl, fileName, fileSize, uploadedAt: new Date().toLocaleDateString('en-US') } : null } }));
   const updateSummaryReport = (fileUrl: string | null, fileName?: string, fileSize?: string) => updateCurrentMeeting((prev) => ({ ...prev, meetingReport: { ...prev.meetingReport, fileUrl: prev.meetingReport?.fileUrl || null, summaryReport: fileUrl ? { fileUrl, fileName, fileSize, uploadedAt: new Date().toLocaleDateString('en-US') } : null } }));
 
   const updateMeetingReportNotes = (notes: string) => {
