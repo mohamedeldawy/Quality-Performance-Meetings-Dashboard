@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 import { QualityMemberProfile, SeniorityTier } from '../../types/dashboard';
 import { QUALITY_COURSE_OPTIONS, QUALITY_GRADE_OPTIONS, QUALITY_SUBJECT_OPTIONS } from '../../data/qualityOptions';
@@ -32,7 +32,17 @@ interface MultiSelectDropdownProps {
 
 const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({ label, value, options, onChange, placeholder }) => {
   const [query, setQuery] = useState('');
-  const filteredOptions = useMemo(
+  const dropdownRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        dropdownRef.current.open = false;
+      }
+    };
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    return () => document.removeEventListener('mousedown', closeOnOutsideClick);
+  }, []);
+  const filteredOptions = useMemo((
     () => options.filter((option) => option.toLowerCase().includes(query.trim().toLowerCase())),
     [options, query]
   );
@@ -40,7 +50,7 @@ const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({ label, value,
   return (
     <div className="block min-w-0 text-[11px] font-semibold text-slate-700">
       <span>{label}</span>
-      <details className="relative mt-1">
+      <details ref={dropdownRef} className="relative mt-1">
         <summary className="flex cursor-pointer items-center justify-between gap-2 rounded border border-slate-300 bg-white p-2 text-xs font-normal text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500">
           <span className="truncate">
             {value.length ? `${value.length} محدد: ${value.slice(0, 2).join('، ')}${value.length > 2 ? '…' : ''}` : placeholder}
@@ -323,18 +333,6 @@ export const Column1Quality: React.FC = () => {
                   className="w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans"
                 />
               </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Grade *</label>
-                <select
-                  value={memberForm.seniority}
-                  onChange={(e) => setMemberForm({ ...memberForm, seniority: e.target.value as SeniorityTier })}
-                  className="w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 font-sans"
-                >
-                  <option value="Junior">Junior</option>
-                  <option value="Middle">Middle</option>
-                  <option value="Senior">Senior</option>
-                </select>
-              </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <MultiSelectDropdown
@@ -344,15 +342,6 @@ export const Column1Quality: React.FC = () => {
                 onChange={(subject) => setMemberForm({ ...memberForm, subject })}
                 placeholder="اختار مادة أو أكثر"
               />
-              <label className="block text-[11px] font-semibold text-slate-700">
-                المراحل الدراسية
-                <input
-                  value={memberForm.stages}
-                  onChange={(e) => setMemberForm({ ...memberForm, stages: e.target.value })}
-                  placeholder="مثال: إعدادي وثانوي"
-                  className="mt-1 w-full text-xs p-2 bg-white border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </label>
               <MultiSelectDropdown
                 label="الملخصات - Grade"
                 value={memberForm.summaryGrades || []}
@@ -375,13 +364,6 @@ export const Column1Quality: React.FC = () => {
                 options={QUALITY_COURSE_OPTIONS}
                 onChange={(coursesReviewed) => setMemberForm({ ...memberForm, coursesReviewed })}
                 placeholder="ابحث واختار كورسات المراجعة"
-              />
-              <MultiSelectDropdown
-                label="كورسات للإنتاج"
-                value={memberForm.coursesProduced || []}
-                options={QUALITY_COURSE_OPTIONS}
-                onChange={(coursesProduced) => setMemberForm({ ...memberForm, coursesProduced })}
-                placeholder="ابحث واختار كورسات الإنتاج"
               />
               <div>
                 <label className="flex items-center justify-center gap-1.5 w-full p-2 bg-white border border-slate-300 rounded text-[11px] font-semibold text-blue-800 cursor-pointer hover:bg-blue-50">
@@ -444,7 +426,11 @@ export const Column1Quality: React.FC = () => {
               </button>
             </div>
 
-            <div className="p-3 bg-gradient-to-br from-blue-50 to-white border-2 border-blue-300 rounded-xl shadow-xs relative">
+            <div
+              onClick={() => setIsChangingMember(true)}
+              className="p-3 bg-gradient-to-br from-blue-50 to-white border-2 border-blue-300 rounded-xl shadow-xs relative cursor-pointer"
+              title="اضغط لإغلاق بطاقة العضو والعودة للقائمة"
+            >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="w-16 h-16 rounded-lg overflow-hidden bg-slate-950 border-2 border-amber-400 shadow-md shrink-0 flex items-center justify-center">
@@ -475,10 +461,6 @@ export const Column1Quality: React.FC = () => {
 
               <div className="mt-3 pt-2 border-t border-blue-200/80 space-y-1.5 text-[11px]">
                 <div className="flex items-start justify-between gap-2">
-                  <span className="text-slate-500 shrink-0">المراحل الدراسية</span>
-                  <span className="text-slate-800 font-semibold text-left">{activeMember.stages || 'غير محددة'}</span>
-                </div>
-                <div className="flex items-start justify-between gap-2">
                   <span className="text-slate-500 shrink-0">ملخصات</span>
                   <span className="text-slate-800 font-semibold text-left">{(activeMember.summaryGrades || []).join('، ') || 'غير محددة'}</span>
                 </div>
@@ -493,20 +475,13 @@ export const Column1Quality: React.FC = () => {
                   </div>
                   <p className="line-clamp-2 text-[10px] text-slate-700">{(activeMember.coursesReviewed || []).join(' · ') || 'لا توجد كورسات محددة'}</p>
                 </div>
-                <div className="border-t border-blue-100 pt-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-500">كورسات للإنتاج</span>
-                    <span className="font-bold text-blue-900">{(activeMember.coursesProduced || []).length}</span>
-                  </div>
-                  <p className="line-clamp-2 text-[10px] text-slate-700">{(activeMember.coursesProduced || []).join(' · ') || 'لا توجد كورسات محددة'}</p>
-                </div>
               </div>
 
               {/* Action bar inside selected member card */}
               <div className="mt-2.5 pt-2 border-t border-indigo-200/60 flex items-center justify-between text-[11px]">
                 <button
                   type="button"
-                  onClick={() => setIsChangingMember(true)}
+                  onClick={(event) => { event.stopPropagation(); setIsChangingMember(true); }}
                   className="flex items-center gap-1 px-2 py-1 bg-white border border-indigo-200 hover:bg-indigo-50 text-indigo-700 rounded-md font-semibold transition-colors shadow-2xs"
                 >
                   <Users className="w-3 h-3" />
@@ -515,7 +490,7 @@ export const Column1Quality: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={startEditingMember}
+                  onClick={(event) => { event.stopPropagation(); startEditingMember(); }}
                   className="p-1 text-blue-700 hover:text-blue-900 transition-colors"
                   title="تعديل بيانات العضو"
                 >
@@ -525,7 +500,8 @@ export const Column1Quality: React.FC = () => {
                 {members.length > 1 && (
                   <button
                     type="button"
-                    onClick={() => {
+                    onClick={(event) => {
+                      event.stopPropagation();
                       if (window.confirm(`هل أنت متأكد من حذف ${activeMember.name}؟`)) {
                         deleteMember(activeMember.id);
                       }
