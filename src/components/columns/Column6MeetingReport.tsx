@@ -21,13 +21,16 @@ export const Column6MeetingReport: React.FC = () => {
     updateMeetingReportFile,
     updateMeetingReportNotes,
     updateMeetingReportRecipient,
+    updateDepartmentReport,
   } = useDashboard();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [copied, setCopied] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState('Operation');
+  const departmentOptions = ['Operation', 'Data Entry', 'Video Edit', 'Technical'];
 
   const report = activeMeeting.meetingReport || { fileUrl: null };
-  const recipient = report.reportRecipient || 'أحمد';
+  const recipient = report.reportRecipient || '';
 
   const opActions = activeMeeting.overplannedNegotiation?.actions || [];
   const tkActions = activeMeeting.ticketsScreen?.actions || [];
@@ -79,6 +82,12 @@ ${report.notes || 'لا توجد ملاحظات إضافية'}
 `;
   };
 
+  const handleExportHtml = () => {
+    const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char] || char));
+    const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(activeMeeting.title)} - Quality Meeting Report</title><style>body{font-family:Arial,sans-serif;max-width:1000px;margin:32px auto;padding:0 20px;color:#172033;line-height:1.6}h1,h2{color:#172554}section{border:1px solid #cbd5e1;border-radius:12px;padding:18px;margin:16px 0;break-inside:avoid}pre{white-space:pre-wrap;font:inherit}.meta{color:#475569}</style></head><body><h1>Quality Meeting Report</h1><p class="meta">${escapeHtml(activeMember.name)} · ${escapeHtml(activeMeeting.title)} · ${escapeHtml(activeMeeting.meetingDate || 'Meeting date not set')}</p><section><h2>Complete Meeting Details</h2><pre>${escapeHtml(generateSummaryText())}</pre></section><section><h2>Departments Actions</h2><p>Overplanned: ${escapeHtml((activeMeeting.overplannedNegotiation?.departmentsActions || []).join(', ') || 'None')}</p><p>Tickets: ${escapeHtml((activeMeeting.ticketsScreen?.departmentsActions || []).join(', ') || 'None')}</p></section><section><h2>Department Reports</h2>${departmentOptions.map((department) => { const item = report.departmentReports?.[department]; return '<p><strong>' + escapeHtml(department) + ':</strong> ' + escapeHtml(item?.fileName || 'No report uploaded') + '</p>'; }).join('')}</section></body></html>`;
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `${activeMember.name.replace(/[^a-z0-9-_]/gi, '_')}_${activeMeeting.title.replace(/[^a-z0-9-_]/gi, '_')}_report.html`; link.click(); URL.revokeObjectURL(url);
+  };
+
   const handleCopySummary = () => {
     navigator.clipboard.writeText(generateSummaryText()).then(() => {
       setCopied(true);
@@ -117,34 +126,7 @@ ${report.notes || 'لا توجد ملاحظات إضافية'}
             </span>
           </div>
 
-          {/* Recipient quick selector: Ahmed or Mohamed or custom */}
-          <div className="grid grid-cols-2 gap-2">
-            {['أحمد', 'محمد'].map((name) => {
-              const isSelected = recipient === name;
-              return (
-                <button
-                  key={name}
-                  type="button"
-                  onClick={() => updateMeetingReportRecipient(name)}
-                  className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all border flex items-center justify-center gap-1.5 ${
-                    isSelected
-                      ? 'bg-purple-600 text-white border-purple-700 shadow-xs ring-2 ring-purple-300'
-                      : 'bg-white text-slate-700 border-purple-200 hover:bg-purple-50'
-                  }`}
-                >
-                  <User className="w-3.5 h-3.5" />
-                  <span>{name}</span>
-                  {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Agreement Badge Text */}
-          <div className="p-2 bg-white/90 rounded-lg border border-purple-200/80 text-[11px] text-purple-950 font-semibold flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>تم الاتفاق على كافة الـ Actions وتم رفع التقرير لمتابعة التنفيذ ({recipient})</span>
-          </div>
+          <div className="text-xs font-semibold text-purple-900">Department reports are uploaded separately below.</div>
 
           {/* Action Count Badges (Overplanned & Tickets) */}
           <div className="grid grid-cols-2 gap-2 pt-1">
@@ -161,6 +143,21 @@ ${report.notes || 'لا توجد ملاحظات إضافية'}
                 تم تدوين {tkActions.length} Actions
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Department report uploads */}
+        <div className="space-y-2 p-3 rounded-xl border border-indigo-200 bg-indigo-50/40">
+          <label className="block text-xs font-bold text-slate-800">Department Report Upload</label>
+          <select value={selectedDepartment} onChange={(e) => setSelectedDepartment(e.target.value)} className="w-full p-2 text-xs bg-white border border-slate-300 rounded-lg">
+            {departmentOptions.map((department) => <option key={department} value={department}>{department}</option>)}
+          </select>
+          <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,image/*" className="w-full text-xs" onChange={(e) => {
+            const file = e.target.files?.[0]; if (!file) return;
+            const reader = new FileReader(); reader.onload = (event) => updateDepartmentReport(selectedDepartment, event.target?.result as string, file.name, (file.size / 1024).toFixed(1) + ' KB'); reader.readAsDataURL(file); e.target.value = '';
+          }} />
+          <div className="space-y-1">
+            {departmentOptions.map((department) => { const item = report.departmentReports?.[department]; return <div key={department} className="flex items-center justify-between gap-2 text-[11px] bg-white border border-slate-200 rounded p-2"><span>{department}</span><span className={item?.fileUrl ? 'text-emerald-700 font-semibold' : 'text-slate-400'}>{item?.fileName || 'No report uploaded'}</span>{item?.fileUrl && <button type="button" onClick={() => updateDepartmentReport(department, null)} className="text-rose-600">Remove</button>}</div>; })}
           </div>
         </div>
 
@@ -255,6 +252,7 @@ ${report.notes || 'لا توجد ملاحظات إضافية'}
               <span>ملخص الميتينج ({activeMeeting.title}):</span>
             </label>
             <div className="flex items-center gap-1.5">
+              <button type="button" onClick={handleExportHtml} className="px-2.5 py-1 bg-indigo-700 hover:bg-indigo-800 text-white rounded text-[11px] font-semibold">Export HTML</button>
               <button
                 type="button"
                 onClick={handleCopySummary}
