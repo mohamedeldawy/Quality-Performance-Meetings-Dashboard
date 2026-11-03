@@ -1,5 +1,5 @@
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const FUNCTION_URL = SUPABASE_URL ? `${SUPABASE_URL.replace(/\\/$/, "")}/functions/v1/dashboard` : "";
+const FUNCTION_URL = SUPABASE_URL ? \`\${SUPABASE_URL.replace(/\/$/, "")}/functions/v1/dashboard\` : "";
 const TOKEN_KEY = "qpd_access_token";
 
 export function saveAccessToken(token: string) {
@@ -11,12 +11,13 @@ export function clearAccessToken() {
 export async function apiRequest(action: string, payload: Record<string, unknown> = {}, authenticated = true) {
   if (!FUNCTION_URL) throw new Error("Supabase URL is not configured.");
   const token = sessionStorage.getItem(TOKEN_KEY);
+  const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
   const response = await fetch(FUNCTION_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ? { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY } : {}),
-      ...(authenticated && token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(publishableKey ? { apikey: publishableKey } : {}),
+      ...(authenticated && token ? { Authorization: \`Bearer \${token}\` } : {}),
     },
     body: JSON.stringify({ action, ...payload }),
   });
