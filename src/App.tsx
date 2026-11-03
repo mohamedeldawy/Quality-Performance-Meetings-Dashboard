@@ -244,7 +244,7 @@ const DashboardContent: React.FC = () => {
 
       {members.length > 0 && (
         <div ref={bottomScrollRef} onScroll={() => syncHorizontalScroll('bottom')} aria-label="Dashboard horizontal navigation" className="h-5 shrink-0 overflow-x-auto overflow-y-hidden border-t border-slate-200 bg-slate-100 scrollbar-thin">
-          <div className="h-1 w-[1925px]" />
+          <div className="h-1 w-[1985px]" />
         </div>
       )}
 
