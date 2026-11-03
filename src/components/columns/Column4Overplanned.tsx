@@ -64,19 +64,19 @@ export const Column4Overplanned: React.FC = () => {
               <span>1. Quality Discussion:</span>
             </span>
             <span className="text-[10px] text-rose-600 font-semibold bg-rose-50 px-1.5 py-0.2 rounded border border-rose-200">
-              حفظ فوري
+              Auto-saved
             </span>
           </label>
           <textarea
             rows={5}
             value={discussion}
             onChange={(e) => updateOverplannedDiscussion(e.target.value)}
-            placeholder="اكتب هنا تفاصيل النقاش اللي دار بينك وبين الشخص بتاع الكواليتي حول أسباب الأوفر بلاند..."
+            placeholder="Enter the quality discussion about overplanned hours and the agreed outcome..."
             className="w-full text-xs text-slate-800 p-2.5 bg-rose-50/30 border border-rose-200/90 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white leading-relaxed resize-none shadow-2xs"
           />
         </div>
 
-        {/* الجزء الثاني: الأكشنز */}
+        {/* Quality Actions */}
         <div className="space-y-2 pt-2 border-t border-rose-100">
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
@@ -84,7 +84,7 @@ export const Column4Overplanned: React.FC = () => {
               <span>2. Quality Actions:</span>
             </label>
             <span className="text-[10px] text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full font-mono font-bold border border-rose-200">
-              {pendingCount} متبقي
+              {pendingCount} pending
             </span>
           </div>
 
@@ -94,7 +94,7 @@ export const Column4Overplanned: React.FC = () => {
             <input
               type="text"
               required
-              placeholder="اكتب الأكشن المطلوب لحل الأوفر بلاند..."
+              placeholder="Enter the required quality action..."
               value={newActionText}
               disabled={noAction}
               onChange={(e) => setNewActionText(e.target.value)}
@@ -114,7 +114,7 @@ export const Column4Overplanned: React.FC = () => {
                 className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 shrink-0 transition-colors shadow-2xs"
               >
                 <Plus className="w-3 h-3" />
-                <span>إضافة أكشن</span>
+                <span>Add Action</span>
               </button>
             </div>
           </form>
@@ -123,7 +123,7 @@ export const Column4Overplanned: React.FC = () => {
           <div className="space-y-1.5">
             {actions.length === 0 ? (
               <div className="text-center py-3 text-xs text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                لا توجد أكشنات مسجلة بعد لهذا الميتينج.
+                No actions recorded for this meeting yet.
               </div>
             ) : (
               actions.map((act) => (
@@ -151,7 +151,7 @@ export const Column4Overplanned: React.FC = () => {
                         {act.text}
                       </span>
                       <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono mt-0.5">
-                        {act.dueDate && <span>التنفيذ: {act.dueDate}</span>}
+                        {act.dueDate && <span>Due: {act.dueDate}</span>}
                         {act.createdBy && (
                           <span className="text-rose-700 bg-rose-50 px-1 py-0.2 rounded font-sans">
                             {act.createdBy}
@@ -164,7 +164,7 @@ export const Column4Overplanned: React.FC = () => {
                   <button
                     onClick={() => deleteOverplannedAction(act.id)}
                     className="p-1 text-slate-400 hover:text-rose-600 transition-colors shrink-0"
-                    title="حذف الأكشن"
+                    title="Delete action"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
