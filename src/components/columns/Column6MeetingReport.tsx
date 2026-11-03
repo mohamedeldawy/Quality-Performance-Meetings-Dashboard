@@ -1,14 +1,11 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 import {
-  FileUp,
   FileText,
-  Download,
   Trash2,
   Copy,
   Check,
   Printer,
-  FileCheck,
   Send,
   User,
   CheckCircle,
@@ -24,7 +21,6 @@ export const Column6MeetingReport: React.FC = () => {
     updateDepartmentReport,
   } = useDashboard();
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [copied, setCopied] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState('Operation');
   const departmentOptions = ['Operation', 'Data Entry', 'Video Edit', 'Technical'];
@@ -35,23 +31,6 @@ export const Column6MeetingReport: React.FC = () => {
   const opActions = activeMeeting.overplannedNegotiation?.actions || [];
   const tkActions = activeMeeting.ticketsScreen?.actions || [];
 
-  const handleFileUpload = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      const sizeKB = (file.size / 1024).toFixed(1) + ' KB';
-      updateMeetingReportFile(result, file.name, sizeKB);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleDownloadFile = () => {
-    if (!report.fileUrl) return;
-    const a = document.createElement('a');
-    a.href = report.fileUrl;
-    a.download = report.fileName || `${activeMember.name}_${activeMeeting.title}_report.pdf`;
-    a.click();
-  };
 
   const generateSummaryText = () => {
     const op = activeMeeting.overplannedNegotiation || { discussionNotes: '', actions: [] };
@@ -143,7 +122,7 @@ ${report.notes || 'No additional notes'}
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-purple-950 flex items-center gap-1.5">
               <Send className="w-3.5 h-3.5 text-purple-600" />
-              <span>إرسال التقرير لمتابعة التنفيذ إلى:</span>
+              <span>تقارير الأقسام</span>
             </span>
           </div>
 
@@ -180,89 +159,6 @@ ${report.notes || 'No additional notes'}
           <div className="space-y-1">
             {departmentOptions.map((department) => { const item = report.departmentReports?.[department]; return <div key={department} className="flex items-center justify-between gap-2 text-[11px] bg-white border border-slate-200 rounded p-2"><span>{department}</span><span className={item?.fileUrl ? 'text-emerald-700 font-semibold' : 'text-slate-400'}>{item?.fileName || 'No report uploaded'}</span>{item?.fileUrl && <button type="button" onClick={() => updateDepartmentReport(department, null)} className="text-rose-600">Remove</button>}</div>; })}
           </div>
-        </div>
-
-        {/* Upload Report Section */}
-        <div className="space-y-1.5">
-          <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
-            <FileUp className="w-3.5 h-3.5 text-purple-600" />
-            <span>ملف التقرير (Upload Report File):</span>
-          </label>
-
-          {report.fileUrl ? (
-            /* Uploaded File Card */
-            <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-3 space-y-2.5">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                    <FileCheck className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-slate-900 truncate" title={report.fileName}>
-                      {report.fileName || 'meeting_report.pdf'}
-                    </div>
-                    <div className="text-[10px] text-slate-500 font-mono">
-                      {report.fileSize || 'ملف جاهز'} {report.uploadedAt && `· ${report.uploadedAt}`}
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => updateMeetingReportFile(null)}
-                  className="p-1 text-slate-400 hover:text-rose-600 transition-colors shrink-0"
-                  title="حذف الملف"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="pt-2 border-t border-emerald-200/60 flex items-center justify-between gap-2">
-                <button
-                  type="button"
-                  onClick={handleDownloadFile}
-                  className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>تنزيل الملف</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="px-3 py-1.5 bg-white border border-emerald-300 text-emerald-800 rounded-lg text-xs font-medium hover:bg-emerald-50 transition-colors"
-                >
-                  استبدال
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* Drop / Upload Button */
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-purple-300 hover:border-purple-500 bg-purple-50/40 rounded-xl p-4 text-center cursor-pointer transition-colors"
-            >
-              <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center mx-auto mb-1.5 shadow-2xs">
-                <FileUp className="w-5 h-5" />
-              </div>
-              <div className="text-xs font-bold text-slate-800 mb-0.5">
-                اضغط لرفع ملف ريبورت الميتينج
-              </div>
-              <div className="text-[10px] text-slate-500">
-                (PDF, Word, TXT, Excel, أو سكرين)
-              </div>
-            </div>
-          )}
-
-          <input
-            type="file"
-            ref={fileInputRef}
-            className="hidden"
-            onChange={(e) => {
-              if (e.target.files && e.target.files[0]) {
-                handleFileUpload(e.target.files[0]);
-              }
-            }}
-          />
         </div>
 
         {/* Live Summary Preview & Fast Copy/Print */}
