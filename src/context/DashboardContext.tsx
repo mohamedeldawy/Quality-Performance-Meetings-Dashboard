@@ -127,7 +127,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 totalTasksScreen: m.totalTasksScreen || { screenshotUrl: null },
                 overplannedNegotiation: m.overplannedNegotiation || { discussionNotes: '', actions: [] },
                 ticketsScreen: m.ticketsScreen || { discussionNotes: '', actions: [] },
-                meetingReport: m.meetingReport ? { reportRecipient: 'أحمد', ...m.meetingReport } : { fileUrl: null, reportRecipient: 'أحمد' },
+                meetingReport: m.meetingReport ? { ...m.meetingReport } : { fileUrl: null },
               };
               return {
                 id: m.id || `m-${idx}`,
@@ -696,7 +696,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const updateDepartmentReport = (department: string, fileUrl: string | null, fileName?: string, fileSize?: string) => {
-    updateCurrentMeeting((prev) => ({ ...prev, meetingReport: { ...prev.meetingReport, fileUrl: prev.meetingReport?.fileUrl || null, departmentReports: { ...(prev.meetingReport?.departmentReports || {}), [department]: fileUrl ? { fileUrl, fileName, fileSize, uploadedAt: new Date().toLocaleDateString('ar-EG') } : null } as any } }));
+    updateCurrentMeeting((prev) => ({ ...prev, meetingReport: { ...prev.meetingReport, fileUrl: prev.meetingReport?.fileUrl || null, departmentReports: { ...(prev.meetingReport?.departmentReports || {}), [department]: fileUrl ? { fileUrl, fileName, fileSize, uploadedAt: new Date().toLocaleDateString('ar-EG') } : null } } }));
   };
 
   const updateMeetingReportNotes = (notes: string) => {
