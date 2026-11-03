@@ -64,6 +64,7 @@ interface DashboardContextType {
   updateMeetingReportRecipient: (recipient: string) => void;
   updateDepartmentReport: (department: string, fileUrl: string | null, fileName?: string, fileSize?: string) => void;
   updateQualityReport: (fileUrl: string | null, fileName?: string, fileSize?: string) => void;
+  updateSummaryReport: (fileUrl: string | null, fileName?: string, fileSize?: string) => void;
 
   resetToDefaults: () => Promise<void>;
 }
@@ -84,6 +85,14 @@ const normalizeDepartmentActions = (value: unknown): DepartmentActionItem[] => {
 const normalizeStringList = (value: unknown): string[] => {
   const values = Array.isArray(value) ? value : typeof value === 'string' && value.trim() ? [value.trim()] : [];
   return Array.from(new Set(values.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean)));
+};
+
+const uploadDashboardImage = async (dataUrl: string | undefined, folder: 'members' | 'users'): Promise<string> => {
+  if (!dataUrl || !dataUrl.startsWith('data:image/')) return dataUrl || '';
+  const response = await apiRequest('image-upload', { dataUrl, folder });
+  const result = await response.json();
+  if (!response.ok || !result.publicUrl) throw new Error(result.error || 'تعذر حفظ الصورة على السيرفر');
+  return result.publicUrl;
 };
 
 const cleanMeetingTitle = (title: string) => title.replace(/\s*\(فحص الشاشات والتسجيل\)/g, '').trim();
@@ -385,7 +394,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   // Member Management
-  const addMember = (name: string, role = 'Quality Engineer', seniority: SeniorityTier = 'Middle', profile: QualityMemberProfile = {}) => {
+  const addMember = async (name: string, role = 'Quality Engineer', seniority: SeniorityTier = 'Middle', profile: QualityMemberProfile = {}) => {
     if (!name.trim()) return;
     const authorName = currentUser ? currentUser.name : 'مستخدم الداشبورد';
     const initialMtgId = `mtg-${Date.now()}`;
@@ -407,12 +416,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       meetingReport: { fileUrl: null, reportRecipient: 'أحمد', notes: 'تم الاتفاق على كافة الـ Actions وتم رفع التقرير لمتابعة التنفيذ.' },
     };
 
+    const savedProfile = { ...profile, photoUrl: await uploadDashboardImage(profile.photoUrl, 'members') };
     const newMember: QualityMemberReview = {
       id: `m-${Date.now()}`,
       name: name.trim(),
       role: role.trim() || 'Quality Engineer',
       seniority,
-      ...profile,
+      ...savedProfile,
       meetings: [defaultMeeting],
       activeMeetingId: initialMtgId,
       lastUpdatedBy: authorName,
@@ -425,8 +435,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     pushToServer(updated, newMember.id);
   };
 
-  const updateMember = (id: string, updates: Partial<QualityMemberReview>) => {
-    const updated = members.map((member) => (member.id === id ? { ...member, ...updates } : member));
+  const updateMember = async (id: string, updates: Partial<QualityMemberReview>) => {
+    const savedUpdates = updates.photoUrl?.startsWith('data:image/') ? { ...updates, photoUrl: await uploadDashboardImage(updates.photoUrl, 'members') } : updates;
+    const updated = members.map((member) => (member.id === id ? { ...member, ...savedUpdates } : member));
     setMembers(updated);
     pushToServer(updated);
   };
@@ -515,9 +526,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const addUser = async (name: string, username: string, password: string, role = 'Quality Engineer', photoUrl = '') => {
     if (!name.trim() || !username.trim() || !password.trim()) return;
     const colors = ['bg-indigo-600', 'bg-emerald-600', 'bg-amber-600', 'bg-rose-600', 'bg-violet-600', 'bg-cyan-600'];
+    const savedPhotoUrl = await uploadDashboardImage(photoUrl, 'users');
     const user: AppUser = {
       id: `user-${Date.now()}`, username: username.trim(), password,
-      name: name.trim(), role: role.trim(), color: colors[users.length % colors.length], photoUrl,
+      name: name.trim(), role: role.trim(), color: colors[users.length % colors.length], photoUrl: savedPhotoUrl,
     };
     const res = await apiRequest('users-save', { user });
     const data = await res.json();
@@ -528,7 +540,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const updateUser = async (id: string, updates: Partial<AppUser>) => {
     const existing = users.find((u) => u.id === id);
     if (!existing) return;
-    const user = { ...existing, ...updates };
+    const savedUpdates = updates.photoUrl?.startsWith('data:image/') ? { ...updates, photoUrl: await uploadDashboardImage(updates.photoUrl, 'users') } : updates;
+    const user = { ...existing, ...savedUpdates };
     const res = await apiRequest('users-save', { user });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'تعذر تحديث المستخدم');
@@ -714,6 +727,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const updateQualityReport = (fileUrl: string | null, fileName?: string, fileSize?: string) => updateCurrentMeeting((prev) => ({ ...prev, meetingReport: { ...prev.meetingReport, fileUrl: prev.meetingReport?.fileUrl || null, qualityReport: fileUrl ? { fileUrl, fileName, fileSize, uploadedAt: new Date().toLocaleDateString('en-US') } : null } }));
+  const updateSummaryReport = (fileUrl: string | null, fileName?: string, fileSize?: string) => updateCurrentMeeting((prev) => ({ ...prev, meetingReport: { ...prev.meetingReport, fileUrl: prev.meetingReport?.fileUrl || null, summaryReport: fileUrl ? { fileUrl, fileName, fileSize, uploadedAt: new Date().toLocaleDateString('en-US') } : null } }));
 
   const updateMeetingReportNotes = (notes: string) => {
     updateCurrentMeeting((prev) => ({
@@ -806,6 +820,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         updateMeetingReportRecipient,
         updateDepartmentReport,
         updateQualityReport,
+        updateSummaryReport,
         resetToDefaults,
       }}
     >
