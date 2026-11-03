@@ -95,6 +95,14 @@ const uploadDashboardImage = async (dataUrl: string | undefined, folder: 'member
   return result.publicUrl;
 };
 
+const uploadDashboardImage = async (dataUrl: string | undefined, folder: 'members' | 'users'): Promise<string> => {
+  if (!dataUrl || !dataUrl.startsWith('data:image/')) return dataUrl || '';
+  const response = await apiRequest('image-upload', { dataUrl, folder });
+  const result = await response.json();
+  if (!response.ok || !result.publicUrl) throw new Error(result.error || 'تعذر حفظ الصورة على السيرفر');
+  return result.publicUrl;
+};
+
 const cleanMeetingTitle = (title: string) => title.replace(/\s*\(فحص الشاشات والتسجيل\)/g, '').trim();
 
 const normalizeMemberProfile = (member: QualityMemberReview): QualityMemberReview => ({
@@ -416,6 +424,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       meetingReport: { fileUrl: null, reportRecipient: 'أحمد', notes: 'تم الاتفاق على كافة الـ Actions وتم رفع التقرير لمتابعة التنفيذ.' },
     };
 
+    const savedProfile = { ...profile, photoUrl: await uploadDashboardImage(profile.photoUrl, 'members') };
     const savedProfile = { ...profile, photoUrl: await uploadDashboardImage(profile.photoUrl, 'members') };
     const newMember: QualityMemberReview = {
       id: `m-${Date.now()}`,
