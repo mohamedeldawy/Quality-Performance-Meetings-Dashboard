@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { QualityMemberProfile, QualityMemberReview, ActionItem, AppUser, DashboardSyncData, MeetingSession, SeniorityTier } from '../types/dashboard';
 import { INITIAL_MEMBERS } from '../data/initialData';
+import { apiRequest, clearAccessToken, saveAccessToken } from '../lib/api';
 
 interface DashboardContextType {
   // Authentication & Users
@@ -223,14 +224,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Authentication is always verified by the server; the session cookie is HttpOnly.
   const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim(), password }),
-      });
+      const res = await apiRequest('login', { username: username.trim(), password }, false);
       const data = await res.json();
       if (!res.ok || !data.success || !data.user) return { success: false, error: data.error || 'تعذر تسجيل الدخول' };
+      saveAccessToken(data.token);
       setCurrentUser(data.user);
       await refreshFromServer();
       return { success: true };
@@ -240,7 +237,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const logout = () => {
-    void fetch('/api/logout', { method: 'POST', credentials: 'include' }).catch(() => undefined);
+    void apiRequest('logout').catch(() => undefined);
+    clearAccessToken();
     setCurrentUser(null);
     setUsers([]);
   };
@@ -248,7 +246,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Fetch state from server
   const refreshFromServer = async () => {
     try {
-      const res = await fetch('/api/dashboard');
+      const res = await apiRequest('dashboard-read');
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data) {
@@ -282,15 +280,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setSyncStatus('saving');
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newMembers));
-      const res = await fetch('/api/dashboard', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          members: newMembers,
-          activeMemberId: newActiveId || activeMemberId,
-          updatedBy: currentUser ? currentUser.name : 'مستخدم الداشبورد',
-        }),
-      });
+      const res = await apiRequest('dashboard-write', { members: newMembers, activeMemberId: newActiveId || activeMemberId });
 
       if (res.ok) {
         const json = await res.json();
@@ -313,7 +303,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Restore the authenticated session from the HttpOnly cookie on page load.
   useEffect(() => {
     let active = true;
-    fetch('/api/session', { credentials: 'include' })
+    apiRequest('session')
       .then(async (res) => {
         if (!res.ok) return null;
         const data = await res.json();
@@ -504,10 +494,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       id: `user-${Date.now()}`, username: username.trim(), password,
       name: name.trim(), role: role.trim(), color: colors[users.length % colors.length], photoUrl,
     };
-    const res = await fetch('/api/users', {
-      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user }),
-    });
+    const res = await apiRequest('users-save', { user });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'تعذر إضافة المستخدم');
     setUsers(data.users || []);
@@ -529,7 +516,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const deleteUser = async (id: string) => {
     if (users.length <= 1) { alert('لا يمكن حذف المستخدم الوحيد.'); return; }
-    const res = await fetch(`/api/users/${encodeURIComponent(id)}`, { method: 'DELETE', credentials: 'include' });
+    const res = await apiRequest('users-delete', { id });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'تعذر حذف المستخدم');
     setUsers((current) => current.filter((u) => u.id !== id));
@@ -698,7 +685,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const resetToDefaults = async () => {
     try {
-      const res = await fetch('/api/reset', { method: 'POST' });
+      const res = await apiRequest('reset');
       if (res.ok) {
         const json = await res.json();
         setMembers(json.data.members);
