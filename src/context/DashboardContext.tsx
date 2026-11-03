@@ -560,6 +560,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       overplannedNegotiation: {
         discussionNotes: notes,
         actions: prev.overplannedNegotiation?.actions || [],
+      departmentsActions: prev.overplannedNegotiation?.departmentsActions || [],
+      noAction: prev.overplannedNegotiation?.noAction || false,
       },
     }));
   };
@@ -614,6 +616,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       ticketsScreen: {
         discussionNotes: notes,
         actions: prev.ticketsScreen?.actions || [],
+      departmentsActions: prev.ticketsScreen?.departmentsActions || [],
+      noAction: prev.ticketsScreen?.noAction || false,
       },
     }));
   };
