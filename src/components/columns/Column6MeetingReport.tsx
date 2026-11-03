@@ -17,7 +17,6 @@ export const Column6MeetingReport: React.FC = () => {
     activeMeeting,
     updateMeetingReportFile,
     updateMeetingReportNotes,
-    updateMeetingReportRecipient,
     updateDepartmentReport,
   } = useDashboard();
 
@@ -26,7 +25,6 @@ export const Column6MeetingReport: React.FC = () => {
   const departmentOptions = ['Operation', 'Data Entry', 'Video Edit', 'Technical'];
 
   const report = activeMeeting.meetingReport || { fileUrl: null };
-  const recipient = report.reportRecipient || '';
 
   const opActions = activeMeeting.overplannedNegotiation?.actions || [];
   const tkActions = activeMeeting.ticketsScreen?.actions || [];
@@ -122,7 +120,7 @@ ${report.notes || 'No additional notes'}
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-purple-950 flex items-center gap-1.5">
               <Send className="w-3.5 h-3.5 text-purple-600" />
-              <span>تقارير الأقسام</span>
+              <span>Department Reports</span>
             </span>
           </div>
 
@@ -133,14 +131,14 @@ ${report.notes || 'No additional notes'}
             <div className="bg-rose-50 border border-rose-200 p-2 rounded-lg text-center">
               <div className="text-[10px] text-rose-700 font-bold">الـ Overplanned:</div>
               <div className="text-xs font-black text-rose-950 font-mono mt-0.5">
-                تم تدوين {opActions.length} Actions
+                {opActions.length} Actions Logged
               </div>
             </div>
 
             <div className="bg-emerald-50 border border-emerald-200 p-2 rounded-lg text-center">
               <div className="text-[10px] text-emerald-700 font-bold">الـ Tickets:</div>
               <div className="text-xs font-black text-emerald-950 font-mono mt-0.5">
-                تم تدوين {tkActions.length} Actions
+                {tkActions.length} Actions Logged
               </div>
             </div>
           </div>
@@ -166,7 +164,7 @@ ${report.notes || 'No additional notes'}
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5 text-purple-600" />
-              <span>ملخص الميتينج ({activeMeeting.title}):</span>
+              <span>Meeting Summary ({activeMeeting.title}):</span>
             </label>
             <div className="flex items-center gap-1.5">
               <button type="button" onClick={handleExportHtml} className="px-2.5 py-1 bg-indigo-700 hover:bg-indigo-800 text-white rounded text-[11px] font-semibold">Export HTML</button>
@@ -197,9 +195,6 @@ ${report.notes || 'No additional notes'}
             <div>
               <strong>الفترة:</strong> من {activeMeeting.duration?.startDate || '25/9'} إلى {activeMeeting.duration?.endDate || '26/10'}
             </div>
-            <div>
-              <strong>المستلم:</strong> {recipient}
-            </div>
             {activeMeeting.totalTasksScreen?.screenshotUrl && (
               <div className="text-emerald-700 font-semibold">✓ تم إرفاق سكرين شوت التاسكات</div>
             )}
@@ -209,13 +204,13 @@ ${report.notes || 'No additional notes'}
         {/* Meeting Notes for Person */}
         <div className="space-y-1">
           <label className="block text-xs font-bold text-slate-800">
-            ملاحظات ختامية مرسلة للشخص:
+            Closing Notes:
           </label>
           <textarea
             rows={2}
             value={report.notes || ''}
             onChange={(e) => updateMeetingReportNotes(e.target.value)}
-            placeholder="اكتب أي ملاحظة أو رسالة موجهة للشخص مع التقرير..."
+            placeholder="Enter any final notes for this meeting report..."
             className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 focus:bg-white resize-none shadow-2xs"
           />
         </div>
@@ -223,7 +218,7 @@ ${report.notes || 'No additional notes'}
 
       {/* Footer */}
       <div className="p-2 bg-purple-50/50 border-t border-purple-100 text-[10px] text-purple-950 text-center font-mono shrink-0">
-        Recipient: {recipient} · {report.fileUrl ? 'Report File Attached' : 'Awaiting File'}
+        {Object.values(report.departmentReports || {}).filter((item) => item?.fileUrl).length} Department Reports Uploaded
       </div>
     </div>
   );
