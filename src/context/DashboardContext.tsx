@@ -59,6 +59,7 @@ interface DashboardContextType {
   updateMeetingReportFile: (fileUrl: string | null, fileName?: string, fileSize?: string) => void;
   updateMeetingReportNotes: (notes: string) => void;
   updateMeetingReportRecipient: (recipient: string) => void;
+  updateDepartmentReport: (department: string, fileUrl: string | null, fileName?: string, fileSize?: string) => void;
 
   resetToDefaults: () => Promise<void>;
 }
@@ -679,6 +680,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }));
   };
 
+  const updateDepartmentReport = (department: string, fileUrl: string | null, fileName?: string, fileSize?: string) => {
+    updateCurrentMeeting((prev) => ({ ...prev, meetingReport: { ...prev.meetingReport, fileUrl: prev.meetingReport?.fileUrl || null, departmentReports: { ...(prev.meetingReport?.departmentReports || {}), [department]: fileUrl ? { fileUrl, fileName, fileSize, uploadedAt: new Date().toLocaleDateString('ar-EG') } : null } as any } }));
+  };
+
   const updateMeetingReportNotes = (notes: string) => {
     updateCurrentMeeting((prev) => ({
       ...prev,
@@ -765,6 +770,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         updateMeetingReportFile,
         updateMeetingReportNotes,
         updateMeetingReportRecipient,
+        updateDepartmentReport,
         resetToDefaults,
       }}
     >
