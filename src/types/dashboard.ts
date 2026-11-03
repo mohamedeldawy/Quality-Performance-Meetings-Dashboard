@@ -9,7 +9,7 @@ export interface ActionItem {
 export interface AppUser {
   id: string;
   username: string;
-  password: string; // Password set by admin
+  password?: string; // Password is managed securely by the server
   name: string;
   role: string;
   color: string;
