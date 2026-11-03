@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { QualityMemberProfile, QualityMemberReview, ActionItem, DepartmentActionItem, DepartmentActionItem, AppUser, DashboardSyncData, MeetingSession, SeniorityTier } from '../types/dashboard';
+import { QualityMemberProfile, QualityMemberReview, ActionItem, DepartmentActionItem, AppUser, DashboardSyncData, MeetingSession, SeniorityTier } from '../types/dashboard';
 import { INITIAL_MEMBERS } from '../data/initialData';
 import { apiRequest, clearAccessToken, saveAccessToken } from '../lib/api';
 
@@ -63,7 +63,6 @@ interface DashboardContextType {
   updateMeetingReportNotes: (notes: string) => void;
   updateMeetingReportRecipient: (recipient: string) => void;
   updateDepartmentReport: (department: string, fileUrl: string | null, fileName?: string, fileSize?: string) => void;
-  updateQualityReport: (fileUrl: string | null, fileName?: string, fileSize?: string) => void;
   updateQualityReport: (fileUrl: string | null, fileName?: string, fileSize?: string) => void;
 
   resetToDefaults: () => Promise<void>;
