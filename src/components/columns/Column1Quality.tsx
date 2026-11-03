@@ -533,7 +533,9 @@ export const Column1Quality: React.FC = () => {
               )}
             </div>
 
-            {tierMembers.length === 0 ? (
+            {members.length === 0 ? (
+              <div className="text-center py-4 text-xs text-slate-600 bg-white rounded-lg border border-dashed border-indigo-300">لا يوجد أعضاء حاليًا. استخدم زر «عضو جديد» بالأعلى لإضافة أول عضو.</div>
+            ) : tierMembers.length === 0 ? (
               <div className="text-center py-4 text-xs text-slate-500 bg-white rounded-lg border border-dashed border-slate-300">
                 لا يوجد أعضاء مسجلون في Grade <strong className="text-indigo-600">{selectedTier}</strong> حاليًا.
                 <div className="mt-2">
