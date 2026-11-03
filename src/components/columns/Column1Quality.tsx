@@ -176,14 +176,16 @@ export const Column1Quality: React.FC = () => {
     setIsChangingMember(false);
   };
 
-  const handleAddMember = (e: React.FormEvent) => {
+  const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!memberForm.name.trim()) return;
     const { name, role, seniority, ...profile } = memberForm;
-    if (editingMemberId) {
-      updateMember(editingMemberId, { name: name.trim(), role: role.trim() || 'Quality Engineer', seniority, ...profile });
-    } else {
-      addMember(name.trim(), role.trim() || undefined, seniority, profile);
+    try {
+      if (editingMemberId) await updateMember(editingMemberId, { name: name.trim(), role: role.trim(), seniority, ...profile });
+      else await addMember(name.trim(), role.trim(), seniority, profile);
+    } catch (error) {
+      setImageError(error instanceof Error ? error.message : 'تعذر حفظ بيانات العضو والصورة.');
+      return;
     }
     setSelectedTier(seniority);
     setShowAddMemberForm(false);
