@@ -59,12 +59,6 @@ export const Column3TotalTasks: React.FC = () => {
           <h2 className="text-xs font-bold tracking-wide">Total Tasks Screen</h2>
         </div>
 
-        <span
-          className="text-[11px] text-amber-200 font-medium truncate max-w-[130px]"
-          title={`${activeMember.name} - ${activeMeeting.title}`}
-        >
-          {activeMember.name} · {activeMeeting.title}
-        </span>
       </div>
 
       {/* English Subtitle */}

@@ -28,12 +28,6 @@ export const Column2Duration: React.FC = () => {
           <h2 className="text-xs font-bold tracking-wide">Duration</h2>
         </div>
 
-        <span
-          className="text-[11px] text-sky-200 font-medium truncate max-w-[130px]"
-          title={`${activeMember.name} - ${activeMeeting.title}`}
-        >
-          {activeMember.name} · {activeMeeting.title}
-        </span>
       </div>
 
       {/* English Subtitle */}

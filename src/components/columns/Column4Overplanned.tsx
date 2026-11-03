@@ -40,12 +40,6 @@ export const Column4Overplanned: React.FC = () => {
           <h2 className="text-xs font-bold tracking-wide">Overplanned Negotiation</h2>
         </div>
 
-        <span
-          className="text-[11px] text-rose-200 font-medium truncate max-w-[130px]"
-          title={`${activeMember.name} - ${activeMeeting.title}`}
-        >
-          {activeMember.name} · {activeMeeting.title}
-        </span>
       </div>
 
       {/* English Subtitle */}
