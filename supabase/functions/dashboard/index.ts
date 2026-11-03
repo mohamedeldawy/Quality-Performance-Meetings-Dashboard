@@ -171,7 +171,7 @@ async function writeDashboard(body: any, user: PublicUser) {
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY || !SESSION_SECRET) return json({ success: false, error: "خدمة قاعدة البيانات غير مكتملة الإعداد." }, 503);
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY || SESSION_SECRET.length < 32) return json({ success: false, error: "خدمة قاعدة البيانات غير مكتملة الإعداد." }, 503);
   try {
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const action = String(body.action || new URL(req.url).searchParams.get("action") || "");
