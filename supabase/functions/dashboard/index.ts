@@ -215,12 +215,21 @@ Deno.serve(async (req: Request) => {
       const bytes = Uint8Array.from(atob(match[2]), (char) => char.charCodeAt(0));
       if (bytes.byteLength > 700 * 1024) return json({ success: false, error: "حجم الصورة بعد الضغط أكبر من 700KB." }, 413);
       const bucket = "quality-dashboard-images";
-      const bucketResponse = await fetch(`${SUPABASE_URL}/storage/v1/bucket`, {
-        method: "POST",
-        headers: { apikey: SUPABASE_SECRET_KEY, Authorization: `Bearer ${SUPABASE_SECRET_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ id: bucket, name: bucket, public: true, file_size_limit: 1048576, allowed_mime_types: ["image/jpeg", "image/png", "image/webp"] }),
-      });
-      if (!bucketResponse.ok && bucketResponse.status !== 409) throw new Error(`تعذر تجهيز مساحة الصور (${bucketResponse.status}): ${(await bucketResponse.text()).slice(0, 180)}`);
+      const storageHeaders = { apikey: SUPABASE_SECRET_KEY, Authorization: `Bearer ${SUPABASE_SECRET_KEY}`, "Content-Type": "application/json" };
+      const existingBucket = await fetch(`${SUPABASE_URL}/storage/v1/bucket/${bucket}`, { headers: storageHeaders });
+      if (!existingBucket.ok && existingBucket.status === 404) {
+        const bucketResponse = await fetch(`${SUPABASE_URL}/storage/v1/bucket`, {
+          method: "POST",
+          headers: storageHeaders,
+          body: JSON.stringify({ id: bucket, name: bucket, public: true, file_size_limit: 1048576, allowed_mime_types: ["image/jpeg", "image/png", "image/webp"] }),
+        });
+        if (!bucketResponse.ok) {
+          const details = await bucketResponse.text();
+          if (!/already exists|duplicate/i.test(details)) throw new Error(`تعذر تجهيز مساحة الصور (${bucketResponse.status}): ${details.slice(0, 220)}`);
+        }
+      } else if (!existingBucket.ok) {
+        throw new Error(`تعذر التحقق من مساحة الصور (${existingBucket.status}): ${(await existingBucket.text()).slice(0, 220)}`);
+      }
       const extension = match[1] === "jpeg" ? "jpg" : match[1];
       const objectPath = `${folder}/${crypto.randomUUID()}.${extension}`;
       const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${objectPath}`, {
