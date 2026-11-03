@@ -5,7 +5,7 @@ import { FileText, Copy, Check, Printer, Trash2, Eye, Upload } from 'lucide-reac
 type StoredFile = { fileUrl: string; fileName?: string; fileSize?: string; uploadedAt?: string };
 
 export const Column6MeetingReport: React.FC = () => {
-  const { activeMember, activeMeeting, updateMeetingReportNotes, updateDepartmentReport, updateQualityReport } = useDashboard();
+  const { activeMember, activeMeeting, updateMeetingReportNotes, updateDepartmentReport, updateQualityReport, updateSummaryReport } = useDashboard();
   const [copied, setCopied] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState('Operation');
   const [preview, setPreview] = useState<{ title: string; file: StoredFile } | null>(null);
@@ -14,6 +14,7 @@ export const Column6MeetingReport: React.FC = () => {
   const report = activeMeeting.meetingReport || { fileUrl: null };
   const departmentReports = report.departmentReports || {};
   const qualityReport = report.qualityReport || null;
+  const summaryReport = report.summaryReport || null;
   const readFile = (file: File, save: (url: string, name: string, size: string) => void) => {
     setUploadError('');
     if (file.size > 4 * 1024 * 1024) {
@@ -63,7 +64,7 @@ Closing Notes: ${report.notes || 'None'}`;
       return item?.fileUrl ? `<p>${escape(department)}: <a href="${item.fileUrl}" download="${escape(item.fileName || department)}">${escape(item.fileName || 'Download')}</a></p>` : `<p>${escape(department)}: No report uploaded</p>`;
     }).join('');
     const qualityLink = qualityReport?.fileUrl ? `<p><a href="${qualityReport.fileUrl}" download="${escape(qualityReport.fileName || 'quality-report')}">${escape(qualityReport.fileName || 'Quality Report')}</a></p>` : '<p>No quality report uploaded</p>';
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Quality Meeting Report</title><style>body{font:14px Arial;max-width:1000px;margin:32px auto;padding:0 20px;color:#172033;line-height:1.6}h1,h2{color:#172554}section{border:1px solid #cbd5e1;border-radius:12px;padding:18px;margin:16px 0}pre{white-space:pre-wrap;font:inherit}</style></head><body><h1>Quality Meeting Report</h1><p>${escape(activeMember.name)} · ${escape(activeMeeting.title)} · ${escape(activeMeeting.meetingDate || 'Date not set')}</p><section><h2>Complete Meeting Details</h2><pre>${escape(generateSummaryText())}</pre></section><section><h2>Departments Reports</h2>${reportLinks}</section><section><h2>Quality Report</h2>${qualityLink}</section></body></html>`;
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Quality Meeting Report</title><style>*{box-sizing:border-box}body{font:14px/1.65 Arial;background:#edf3fa;max-width:1050px;margin:28px auto;padding:0 22px;color:#172033}.hero{display:flex;align-items:center;gap:18px;background:linear-gradient(120deg,#101d3d,#173d70,#25618c);color:white;padding:24px;border-radius:18px}.hero h1{color:white;font-size:22px}.logo{width:68px;height:68px;object-fit:contain;background:white;border-radius:12px;padding:5px}.member{display:block;background:white}.avatar{width:100px;height:100px;object-fit:cover;border-radius:14px;border:3px solid #e5b84c}h2{color:#173e70}section{background:white;border:1px solid #d4e0ef;border-radius:14px;padding:18px;margin:16px 0;box-shadow:0 4px 15px #102c4c0d}pre{white-space:pre-wrap;font:inherit;background:#f5f8fc;padding:14px;border-radius:10px}a{color:#1e5ca2;font-weight:bold}@media print{body{background:white}.hero{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><header class="hero"><img class="logo" src="https://logopng-omega.vercel.app/file.png" alt="Dashboard logo"><div><h1>QUALITY PERFORMANCE MEETING DASHBOARD</h1><p>Meeting execution report</p></div></header><section class="member">${activeMember.photoUrl ? `<img class="avatar" src="${activeMember.photoUrl}" alt="Member photo">` : ''}<h2>${escape(activeMember.name)}</h2><p>${escape(activeMember.role || '—')} · ${escape(activeMember.seniority || '—')}</p><p>Subject: ${escape((activeMember.subject || []).join(' · '))} | Stages: ${escape(activeMember.stages || '—')}</p><p>Summary Grades: ${escape((activeMember.summaryGrades || []).join(' · '))} | Quiz Grades: ${escape((activeMember.quizGrades || []).join(' · '))}</p><p>Courses Reviewed: ${escape((activeMember.coursesReviewed || []).join(' · '))} | Courses Produced: ${escape((activeMember.coursesProduced || []).join(' · '))}</p><p>Meeting date: ${escape(activeMeeting.meetingDate || '—')} · Duration: ${escape(activeMeeting.duration?.startDate || '—')} → ${escape(activeMeeting.duration?.endDate || '—')}</p></section><section><h2>Complete Meeting Details</h2><pre>${escape(generateSummaryText())}</pre></section><section><h2>Departments Reports</h2>${reportLinks}</section><section><h2>Quality Report</h2>${qualityLink}</section></body></html>`;
     const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }));
     const link = document.createElement('a'); link.href = url; link.download = 'quality-meeting-report.html'; link.click(); URL.revokeObjectURL(url);
   };
@@ -97,9 +98,10 @@ Closing Notes: ${report.notes || 'None'}`;
           {renderUpload('Quality Report File', qualityReport, (url, name, size) => updateQualityReport(url, name, size), () => updateQualityReport(null))}
         </section>
         {uploadError && <p className="rounded-lg bg-rose-50 p-2 text-[11px] text-rose-700">{uploadError}</p>}
+        <section className="space-y-2 rounded-xl border border-sky-200 bg-sky-50/50 p-3"><h3 className="text-xs font-bold text-sky-950">Meeting Summary</h3>{renderUpload('Meeting Summary File', summaryReport, (url, name, size) => updateSummaryReport(url, name, size), () => updateSummaryReport(null))}</section>
         <section className="space-y-2 border-t border-slate-200 pt-3">
           <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-xs font-bold text-slate-800">Meeting Summary</h3><div className="flex gap-1.5"><button type="button" onClick={handleExport} className="rounded bg-indigo-700 px-2.5 py-1 text-[11px] font-semibold text-white">Export HTML</button><button type="button" onClick={copySummary} className="flex items-center gap-1 rounded bg-slate-900 px-2.5 py-1 text-[11px] text-white">{copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}{copied ? 'Copied' : 'Copy'}</button><button type="button" onClick={() => window.print()} className="rounded bg-slate-100 p-1 text-slate-700"><Printer className="h-3.5 w-3.5" /></button></div></div>
-          <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-[10px] leading-relaxed text-slate-700">{generateSummaryText()}</pre>
+
         </section>
         <section className="space-y-1"><label className="text-xs font-bold text-slate-800">Closing Notes</label><textarea rows={3} value={report.notes || ''} onChange={(event) => updateMeetingReportNotes(event.target.value)} placeholder="Enter final meeting notes..." className="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-purple-500" /></section>
       </div>
