@@ -131,7 +131,7 @@ export const Column1Quality: React.FC = () => {
   });
 
   // State to toggle between showing only the active member vs showing the tier's members list
-  const [isChangingMember, setIsChangingMember] = useState(false);
+  const [isChangingMember, setIsChangingMember] = useState(members.length === 0);
   const [showAddMemberForm, setShowAddMemberForm] = useState(false);
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [memberForm, setMemberForm] = useState<MemberFormValues>({
@@ -409,7 +409,7 @@ export const Column1Quality: React.FC = () => {
         )}
 
         {/* SECTION 1: Active Member Single View vs Switcher */}
-        {!isChangingMember && activeMember ? (
+        {members.length > 0 && !isChangingMember && activeMember ? (
           /* SINGLE SELECTED MEMBER VIEW (No other members shown) */
           <div className="space-y-1.5">
             <div className="flex items-center justify-between px-1">
@@ -497,7 +497,7 @@ export const Column1Quality: React.FC = () => {
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
 
-                {members.length > 1 && (
+                {(
                   <button
                     type="button"
                     onClick={(event) => {
@@ -603,7 +603,7 @@ export const Column1Quality: React.FC = () => {
         )}
 
         {/* SECTION 2: Active Member's Meetings Archive */}
-        {activeMember && (
+        {members.length > 0 && activeMember && (
           <div className="pt-2 border-t border-slate-200 space-y-2">
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 font-sans">
@@ -658,7 +658,7 @@ export const Column1Quality: React.FC = () => {
                         >
                           <Calendar className="w-2.5 h-2.5" />
                           <span>
-                            {meeting.duration.startDate || '25/9'} إلى {meeting.duration.endDate || '26/10'}
+                            Meeting date: {meeting.meetingDate || meeting.createdAt || 'Not set'}
                           </span>
                         </div>
                       </div>
