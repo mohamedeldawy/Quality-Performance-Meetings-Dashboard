@@ -1,0 +1,4 @@
+project_id = "gexpautvhgwscujyhdhr"
+
+[functions.dashboard]
+verify_jwt = false
