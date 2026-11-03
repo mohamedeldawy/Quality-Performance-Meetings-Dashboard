@@ -45,6 +45,7 @@ export interface MeetingSession {
     actions: ActionItem[];
     departmentsActions?: DepartmentActionItem[];
     noAction?: boolean;
+    departmentsNoAction?: boolean;
   };
 
   // 5. Tickets Screen
