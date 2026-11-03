@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
-import { MessageSquare, CheckSquare, Plus, Trash2, Bug } from 'lucide-react';
+import { MessageSquare, CheckSquare, Plus, Trash2 } from 'lucide-react';
 
 export const Column5Tickets: React.FC = () => {
   const {
@@ -56,7 +56,7 @@ export const Column5Tickets: React.FC = () => {
 
       {/* Content Form */}
       <div className="flex-1 p-3 space-y-3.5 overflow-y-auto" dir="rtl">
-        {/* الخانة الأولى: النيجوشيشن */}
+        {/* Quality Discussion */}
         <div className="space-y-1.5">
           <label className="block text-xs font-bold text-slate-800 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
@@ -64,19 +64,19 @@ export const Column5Tickets: React.FC = () => {
               <span>1. Quality Discussion:</span>
             </span>
             <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
-              حفظ فوري
+              Auto-saved
             </span>
           </label>
           <textarea
             rows={5}
             value={discussion}
             onChange={(e) => updateTicketsDiscussion(e.target.value)}
-            placeholder="اكتب هنا تفاصيل النيجوشيشن والنقاش حول التذاكر والبلاغات ومشاكل الجودة..."
+            placeholder="Enter the quality discussion for tickets, reports, and quality issues..."
             className="w-full text-xs text-slate-800 p-2.5 bg-emerald-50/30 border border-emerald-200/90 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white leading-relaxed resize-none shadow-2xs"
           />
         </div>
 
-        {/* الخانة الثانية: الأكشنز */}
+        {/* Quality Actions For Tickets */}
         <div className="space-y-2 pt-2 border-t border-emerald-100">
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
@@ -84,17 +84,17 @@ export const Column5Tickets: React.FC = () => {
               <span>2. Quality Actions For Tickets:</span>
             </label>
             <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full font-mono font-bold border border-emerald-200">
-              {pendingCount} متبقي
+              {pendingCount} pending
             </span>
           </div>
 
           {/* Add Action Form */}
           <label className="flex items-center gap-2 text-xs font-semibold text-slate-700"><input type="checkbox" checked={noAction} onChange={(e) => setTicketsNoAction(e.target.checked)} className="rounded" /> لا يوجد — لن يتم اتخاذ أي Action</label>
-          <form onSubmit={handleAddAction className="bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-200 space-y-2">
+          <form onSubmit={handleAddAction} className="bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-200 space-y-2">
             <input
               type="text"
               required
-              placeholder="اكتب الأكشن المطلوب للتيكتس والبلاغات..."
+              placeholder="Enter the required quality action for tickets..."
               value={newActionText}
               disabled={noAction}
               onChange={(e) => setNewActionText(e.target.value)}
@@ -114,7 +114,7 @@ export const Column5Tickets: React.FC = () => {
                 className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 shrink-0 transition-colors shadow-2xs"
               >
                 <Plus className="w-3 h-3" />
-                <span>إضافة أكشن</span>
+                <span>Add Action</span>
               </button>
             </div>
           </form>
@@ -123,7 +123,7 @@ export const Column5Tickets: React.FC = () => {
           <div className="space-y-1.5">
             {actions.length === 0 ? (
               <div className="text-center py-3 text-xs text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                لا توجد أكشنات مسجلة للتذاكر بعد لهذا الميتينج.
+                No ticket actions recorded for this meeting yet.
               </div>
             ) : (
               actions.map((act) => (
@@ -151,7 +151,7 @@ export const Column5Tickets: React.FC = () => {
                         {act.text}
                       </span>
                       <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono mt-0.5">
-                        {act.dueDate && <span>التنفيذ: {act.dueDate}</span>}
+                        {act.dueDate && <span>Due: {act.dueDate}</span>}
                         {act.createdBy && (
                           <span className="text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded font-sans">
                             {act.createdBy}
@@ -164,7 +164,7 @@ export const Column5Tickets: React.FC = () => {
                   <button
                     onClick={() => deleteTicketsAction(act.id)}
                     className="p-1 text-slate-400 hover:text-rose-600 transition-colors shrink-0"
-                    title="حذف الأكشن"
+                    title="Delete action"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
