@@ -174,7 +174,7 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
                   <label className="block text-xs font-semibold text-slate-700 mb-1">الدور / المسمى الوظيفي</label>
                   <input
                     type="text"
-                    list="quality-role-options"
+                    
                     placeholder="مثال: Quality Lead أو Auditor"
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
@@ -351,7 +351,7 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
                           المسمى الوظيفي
                           <input
                             required
-                            list="quality-role-options"
+                            
                             value={editValues.role}
                             onChange={(e) => setEditValues({ ...editValues, role: e.target.value })}
                             className="mt-1 w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
