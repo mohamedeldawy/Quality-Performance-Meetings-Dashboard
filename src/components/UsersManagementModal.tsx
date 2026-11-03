@@ -74,7 +74,7 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
     const usernameValue = editValues.username.trim();
     const passwordValue = editValues.password.trim();
     const roleValue = editValues.role.trim();
-    if (!nameValue || !usernameValue || !passwordValue || !roleValue) return;
+    if (!nameValue || !usernameValue || !roleValue) return;
 
     if (users.some((user) => user.id !== userId && user.username.toLowerCase() === usernameValue.toLowerCase())) {
       setStatusMessage('اسم المستخدم موجود بالفعل، يرجى اختيار اسم مستخدم آخر.');
@@ -84,7 +84,7 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
     await updateUser(userId, {
       name: nameValue,
       username: usernameValue,
-      password: passwordValue,
+      ...(passwordValue ? { password: passwordValue } : {}),
       role: roleValue,
       photoUrl: editValues.photoUrl,
     });
@@ -311,7 +311,7 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
                             setEditingUserId(null);
                           } else {
                             setEditingUserId(u.id);
-                            setEditValues({ name: u.name, username: u.username, password: u.password, role: u.role, photoUrl: u.photoUrl || '' });
+                            setEditValues({ name: u.name, username: u.username, password: '', role: u.role, photoUrl: u.photoUrl || '' });
                           }
                         }}
                         className="flex items-center gap-1 px-2.5 py-1 bg-white border border-slate-300 hover:border-indigo-400 text-slate-700 hover:text-indigo-600 rounded-lg text-xs font-medium transition-colors"
@@ -367,10 +367,10 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
                           />
                         </label>
                         <label className="block text-[11px] font-semibold text-slate-700">
-                          كلمة المرور
+                          كلمة مرور جديدة (اختياري)
                           <input
-                            required
-                            type="text"
+                            type="password"
+                            placeholder="اتركها فارغة للاحتفاظ بالحالية"
                             value={editValues.password}
                             onChange={(e) => setEditValues({ ...editValues, password: e.target.value })}
                             className="mt-1 w-full text-xs p-2 bg-slate-50 border border-slate-300 rounded-lg font-mono focus:outline-none focus:ring-1 focus:ring-blue-500"
