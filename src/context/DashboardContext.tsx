@@ -99,7 +99,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('quality_team_meeting_dashboard_v5');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
+          if (parsed.length === 0) return [];
           return parsed.map((m: any, idx: number) => {
             const roleStr = (m.role || '').toLowerCase();
             const inferredSeniority: SeniorityTier =
@@ -261,15 +262,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
           if (remoteData.version >= versionRef.current && !isSavingRef.current) {
             versionRef.current = remoteData.version;
-            if (Array.isArray(remoteData.members) && remoteData.members.length > 0) {
+            if (Array.isArray(remoteData.members)) {
               setMembers(remoteData.members.map(normalizeMemberProfile));
             }
             if (Array.isArray(remoteData.users)) {
               setUsers(remoteData.users);
             }
-            if (remoteData.activeMemberId) {
-              setActiveMemberId(remoteData.activeMemberId);
-            }
+            setActiveMemberId(remoteData.activeMemberId || remoteData.members[0]?.id || '');
             setLastUpdatedBy(remoteData.lastUpdatedBy);
             setLastUpdatedAt(remoteData.lastUpdatedAt);
           }
@@ -287,7 +286,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setSyncStatus('saving');
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newMembers));
-      const res = await apiRequest('dashboard-write', { members: newMembers, activeMemberId: newActiveId || activeMemberId });
+      const res = await apiRequest('dashboard-write', { members: newMembers, activeMemberId: newActiveId ?? activeMemberId });
 
       if (res.ok) {
         const json = await res.json();
@@ -342,6 +341,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Update current member's ACTIVE MEETING
   const updateCurrentMeeting = (updater: (prevMeeting: MeetingSession) => MeetingSession) => {
+    if (members.length === 0) return;
     const nowFormatted = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
     const authorName = currentUser ? currentUser.name : 'مستخدم الداشبورد';
 
@@ -375,6 +375,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const defaultMeeting: MeetingSession = {
       id: initialMtgId,
       title: 'Meeting 1',
+      meetingDate: new Date().toISOString().split('T')[0],
       createdAt: new Date().toISOString().split('T')[0],
       createdBy: authorName,
       duration: {
@@ -419,13 +420,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const deleteMember = (id: string) => {
-    if (members.length <= 1) {
-      alert('يجب أن يتبقى عضو واحد على الأقل في القائمة.');
-      return;
-    }
     const filtered = members.filter((m) => m.id !== id);
     setMembers(filtered);
-    const nextActiveId = activeMemberId === id ? filtered[0].id : activeMemberId;
+    const nextActiveId = activeMemberId === id ? (filtered[0]?.id || '') : activeMemberId;
     setActiveMemberId(nextActiveId);
     pushToServer(filtered, nextActiveId);
   };
@@ -445,6 +442,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const newMeeting: MeetingSession = {
       id: newMtgId,
       title: title || `Meeting ${nextNumber}`,
+      meetingDate: new Date().toISOString().split('T')[0],
       createdAt: new Date().toISOString().split('T')[0],
       createdBy: authorName,
       duration: {
