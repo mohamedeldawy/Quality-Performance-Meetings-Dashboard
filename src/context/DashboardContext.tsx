@@ -221,7 +221,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(members)); } catch { /* quota fallback */ }
   }, [members]);
 
-  // Authentication is always verified by the server; the session cookie is HttpOnly.
+  // Authentication is verified by the Supabase Edge Function; the bearer token stays in this browser tab.
   const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const res = await apiRequest('login', { username: username.trim(), password }, false);
@@ -247,6 +247,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const refreshFromServer = async () => {
     try {
       const res = await apiRequest('dashboard-read');
+      if (res.status === 401) {
+        clearAccessToken();
+        setCurrentUser(null);
+        setUsers([]);
+        setSyncStatus('offline');
+        return;
+      }
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data) {
@@ -257,7 +264,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             if (Array.isArray(remoteData.members) && remoteData.members.length > 0) {
               setMembers(remoteData.members.map(normalizeMemberProfile));
             }
-            if (Array.isArray(remoteData.users) && remoteData.users.length > 0) {
+            if (Array.isArray(remoteData.users)) {
               setUsers(remoteData.users);
             }
             if (remoteData.activeMemberId) {
@@ -300,7 +307,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  // Restore the authenticated session from the HttpOnly cookie on page load.
+  // Restore the authenticated session from this tab's session token.
   useEffect(() => {
     let active = true;
     apiRequest('session')
