@@ -10,11 +10,14 @@ export const Column5Tickets: React.FC = () => {
     addTicketsAction,
     toggleTicketsAction,
     deleteTicketsAction,
-    updateTicketsDepartments,
+    addTicketsDepartmentAction,
+    deleteTicketsDepartmentAction,
     setTicketsNoAction,
   } = useDashboard();
 
   const [newActionText, setNewActionText] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('Operation');
+  const [departmentDueDate, setDepartmentDueDate] = useState(new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0]);
   const [newDueDate, setNewDueDate] = useState(
     new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   );
@@ -90,7 +93,7 @@ export const Column5Tickets: React.FC = () => {
 
           {/* Add Action Form */}
           <label className="flex items-center gap-2 text-xs font-semibold text-slate-700"><input type="checkbox" checked={noAction} onChange={(e) => setTicketsNoAction(e.target.checked)} className="rounded" /> لا يوجد — لن يتم اتخاذ أي Action</label>
-          <form onSubmit={handleAddAction} className="bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-200 space-y-2">
+          {!noAction && <form onSubmit={handleAddAction} className="bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-200 space-y-2">
             <input
               type="text"
               required
@@ -117,7 +120,7 @@ export const Column5Tickets: React.FC = () => {
                 <span>Add Action</span>
               </button>
             </div>
-          </form>
+          </form>}
 
           {/* Action Items List */}
           <div className="space-y-1.5">
@@ -175,14 +178,11 @@ export const Column5Tickets: React.FC = () => {
         </div>
         <div className="pt-3 border-t border-slate-200 space-y-2">
           <div className="text-xs font-bold text-slate-800">Departments Actions</div>
-          <div className="grid grid-cols-2 gap-2">
-            {departmentOptions.map((department) => (
-              <label key={department} className="flex items-center gap-2 text-[11px] text-slate-700 bg-slate-50 border border-slate-200 rounded-lg p-2">
-                <input type="checkbox" checked={departments.includes(department)} onChange={(e) => updateTicketsDepartments(e.target.checked ? [...departments, department] : departments.filter((item) => item !== department))} />
-                {department}
-              </label>
-            ))}
-          </div>
+          <form onSubmit={(event) => { event.preventDefault(); addTicketsDepartmentAction(selectedDepartment, departmentDueDate); }} className="space-y-2 rounded-lg border border-emerald-200 bg-emerald-50/50 p-2">
+            <select value={selectedDepartment} onChange={(event) => setSelectedDepartment(event.target.value)} className="w-full rounded-lg border border-slate-300 bg-white p-2 text-xs">{departmentOptions.map((department) => <option key={department} value={department}>{department}</option>)}</select>
+            <div className="flex items-center gap-2"><input required type="date" value={departmentDueDate} onChange={(event) => setDepartmentDueDate(event.target.value)} className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white p-2 text-xs" /><button type="submit" className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white"><Plus className="inline h-3 w-3" /> Add Action</button></div>
+          </form>
+          <div className="space-y-1.5">{departments.map((item) => <div key={item.id} className="flex items-center justify-between gap-2 rounded-lg border bg-white p-2 text-[11px]"><span className="font-semibold">{item.department}</span><span>Due: {item.dueDate || '-'}</span><button type="button" onClick={() => deleteTicketsDepartmentAction(item.id)} className="text-rose-600"><Trash2 className="h-3.5 w-3.5" /></button></div>)}</div>
         </div>
       </div>
 
