@@ -87,45 +87,10 @@ const DashboardContext = createContext<DashboardContextType | undefined>(undefin
 
 export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Users state with defensive defaults
-  const [users, setUsers] = useState<AppUser[]>(() => {
-    try {
-      const saved = localStorage.getItem(USERS_STORAGE_KEY) || localStorage.getItem('quality_team_users_v2');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((u: any, idx: number) => ({
-            id: u.id || `user-${idx}`,
-            username: u.username || (idx === 0 ? 'dawy' : idx === 1 ? 'radwa' : `user${idx + 1}`),
-            password: u.password || (idx === 0 ? 'password123' : idx === 1 ? 'radwa123' : 'password123'),
-            name: u.name || `User ${idx + 1}`,
-            role: u.role || 'Quality Engineer',
-            color: u.color || 'bg-indigo-600',
-            photoUrl: u.photoUrl || '',
-          }));
-        }
-      }
-      return INITIAL_USERS;
-    } catch {
-      return INITIAL_USERS;
-    }
-  });
+  const [users, setUsers] = useState<AppUser[]>([]);
 
   // Current logged in user
-  const [currentUser, setCurrentUser] = useState<AppUser | null>(() => {
-    try {
-      const saved = localStorage.getItem(AUTH_SESSION_KEY) || localStorage.getItem('quality_team_auth_session_v1');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && (parsed.id || parsed.username)) {
-          const match = users.find((u) => u.id === parsed.id || (u.username && u.username.toLowerCase() === (parsed.username || '').toLowerCase()));
-          if (match) return match;
-        }
-      }
-    } catch {
-      // ignore
-    }
-    return null; // Require login screen by default
-  });
+  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
 
   // Members state with migration safety
   const [members, setMembers] = useState<QualityMemberReview[]>(() => {
@@ -250,70 +215,34 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     title: cleanMeetingTitle(selectedMeeting.title),
   };
 
-  // Sync to local storage
+  // Keep dashboard data cached locally; credentials and sessions are server-only.
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(members));
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-      if (currentUser) {
-        localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(currentUser));
-      } else {
-        localStorage.removeItem(AUTH_SESSION_KEY);
-      }
-    } catch {
-      // quota fallback
-    }
-  }, [members, users, currentUser]);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(members)); } catch { /* quota fallback */ }
+  }, [members]);
 
-  // Login handler
+  // Authentication is always verified by the server; the session cookie is HttpOnly.
   const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    const trimmedUser = (username || '').trim().toLowerCase();
-    const trimmedPass = (password || '').trim();
-
-    // 1. First check local users (ensures GitHub Pages / static hosting works instantly)
-    const matched = users.find(
-      (u) => (u.username || '').toLowerCase() === trimmedUser && (u.password || '') === trimmedPass
-    );
-
-    if (matched) {
-      setCurrentUser(matched);
-      try {
-        localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(matched));
-      } catch {
-        // ignore
-      }
-      return { success: true };
-    }
-
-    // 2. Try server API login (if running full-stack)
     try {
       const res = await fetch('/api/login', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: trimmedUser, password: trimmedPass }),
+        body: JSON.stringify({ username: username.trim(), password }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success && data.user) {
-          setCurrentUser(data.user);
-          localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(data.user));
-          return { success: true };
-        }
-      }
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.user) return { success: false, error: data.error || 'تعذر تسجيل الدخول' };
+      setCurrentUser(data.user);
+      await refreshFromServer();
+      return { success: true };
     } catch {
-      // static fallback
+      return { success: false, error: 'تعذر الاتصال بالسيرفر. تحقق من الاتصال وحاول مرة أخرى.' };
     }
-
-    return { success: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' };
   };
 
   const logout = () => {
+    void fetch('/api/logout', { method: 'POST', credentials: 'include' }).catch(() => undefined);
     setCurrentUser(null);
-    try {
-      localStorage.removeItem(AUTH_SESSION_KEY);
-    } catch {
-      // ignore
-    }
+    setUsers([]);
   };
 
   // Fetch state from server
@@ -381,9 +310,22 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   };
 
-  // Initial load
+  // Restore the authenticated session from the HttpOnly cookie on page load.
   useEffect(() => {
-    refreshFromServer();
+    let active = true;
+    fetch('/api/session', { credentials: 'include' })
+      .then(async (res) => {
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.success ? data.user : null;
+      })
+      .then(async (user) => {
+        if (!active) return;
+        setCurrentUser(user);
+        if (user) await refreshFromServer();
+      })
+      .catch(() => { if (active) setSyncStatus('offline'); });
+    return () => { active = false; };
   }, []);
 
   // Update current member's ACTIVE MEETING
@@ -543,71 +485,40 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const addUser = async (name: string, username: string, password: string, role = 'Quality Engineer', photoUrl = '') => {
     if (!name.trim() || !username.trim() || !password.trim()) return;
     const colors = ['bg-indigo-600', 'bg-emerald-600', 'bg-amber-600', 'bg-rose-600', 'bg-violet-600', 'bg-cyan-600'];
-    const newUser: AppUser = {
-      id: `user-${Date.now()}`,
-      username: username.trim(),
-      password: password.trim(),
-      name: name.trim(),
-      role: role.trim(),
-      color: colors[users.length % colors.length],
-      photoUrl,
+    const user: AppUser = {
+      id: `user-${Date.now()}`, username: username.trim(), password,
+      name: name.trim(), role: role.trim(), color: colors[users.length % colors.length], photoUrl,
     };
-
-    const updatedUsers = [...users, newUser];
-    setUsers(updatedUsers);
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
-
-    try {
-      await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user: newUser, updatedBy: currentUser ? currentUser.name : 'المدير' }),
-      });
-    } catch {
-      // offline fallback
-    }
+    const res = await fetch('/api/users', {
+      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'تعذر إضافة المستخدم');
+    setUsers(data.users || []);
   };
 
   const updateUser = async (id: string, updates: Partial<AppUser>) => {
-    const updatedUsers = users.map((u) => (u.id === id ? { ...u, ...updates } : u));
-    setUsers(updatedUsers);
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
-
-    const updatedUser = updatedUsers.find((u) => u.id === id);
-    if (updatedUser) {
-      if (currentUser?.id === id) {
-        setCurrentUser(updatedUser);
-      }
-      try {
-        await fetch('/api/users', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user: updatedUser }),
-        });
-      } catch {
-        // offline
-      }
-    }
+    const existing = users.find((u) => u.id === id);
+    if (!existing) return;
+    const user = { ...existing, ...updates };
+    const res = await fetch('/api/users', {
+      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'تعذر تحديث المستخدم');
+    setUsers(data.users || []);
+    if (currentUser?.id === id) setCurrentUser(user);
   };
 
   const deleteUser = async (id: string) => {
-    if (users.length <= 1) {
-      alert('لا يمكن حذف المستخدم الوحيد.');
-      return;
-    }
-    const updatedUsers = users.filter((u) => u.id !== id);
-    setUsers(updatedUsers);
-    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(updatedUsers));
-
-    if (currentUser?.id === id) {
-      setCurrentUser(updatedUsers[0]);
-    }
-
-    try {
-      await fetch(`/api/users/${id}`, { method: 'DELETE' });
-    } catch {
-      // offline
-    }
+    if (users.length <= 1) { alert('لا يمكن حذف المستخدم الوحيد.'); return; }
+    const res = await fetch(`/api/users/${encodeURIComponent(id)}`, { method: 'DELETE', credentials: 'include' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'تعذر حذف المستخدم');
+    setUsers((current) => current.filter((u) => u.id !== id));
+    if (currentUser?.id === id) logout();
   };
 
   // Column 2: Duration
