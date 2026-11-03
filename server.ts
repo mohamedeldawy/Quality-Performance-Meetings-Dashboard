@@ -166,7 +166,7 @@ app.post('/api/login', async (req, res) => {
       method: 'POST', prefer: 'return=minimal',
       body: [{ token_hash: sha256(token), user_id: user.id, expires_at: new Date(Date.now() + SESSION_TTL_MS).toISOString() }],
     });
-    res.cookie('qpd_session', token, cookieOptions);
+    res.setHeader('Set-Cookie', `qpd_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}${isProduction ? '; Secure' : ''}`);
     return res.json({ success: true, user: publicUser(user) });
   } catch (error) {
     console.error('[Login]', error);
@@ -179,7 +179,7 @@ app.post('/api/logout', async (req, res) => {
     const token = getToken(req);
     if (token && configured()) await supabase('dashboard_sessions', { method: 'DELETE', query: `token_hash=eq.${sha256(token)}`, prefer: 'return=minimal' });
   } catch (error) { console.error('[Logout]', error); }
-  res.clearCookie('qpd_session', { httpOnly: true, secure: isProduction, sameSite: 'lax', path: '/' });
+  res.setHeader('Set-Cookie', `qpd_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${isProduction ? '; Secure' : ''}`);
   res.json({ success: true });
 });
 app.get('/api/dashboard', requireAuth, async (_req, res) => {
@@ -216,7 +216,7 @@ app.post('/api/users', requireAuth, requireManager, async (req, res) => {
     const u = req.body?.user;
     if (!u?.name?.trim() || !u?.username?.trim()) return res.status(400).json({ success: false, error: 'الاسم واسم المستخدم مطلوبان' });
     const id = u.id || `user-${Date.now()}`;
-    const current = await supabase<any[]>('dashboard_users', { query: `select=id,username,name,role,color,photo_url& id=eq.${encodeURIComponent(id)}&limit=1` });
+    const current = await supabase<any[]>('dashboard_users', { query: `select=id,username,name,role,color,photo_url&id=eq.${encodeURIComponent(id)}&limit=1` });
     const payload: any = { id, username: u.username.trim(), name: u.name.trim(), role: u.role || 'Quality Engineer', color: u.color || 'bg-indigo-600', photo_url: u.photoUrl || null, updated_at: new Date().toISOString() };
     if (u.password) payload.password_hash = await hashPassword(String(u.password));
     if (!current.length && !payload.password_hash) return res.status(400).json({ success: false, error: 'كلمة المرور مطلوبة للمستخدم الجديد' });
