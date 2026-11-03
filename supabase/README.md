@@ -30,6 +30,7 @@ In GitHub → Settings → Secrets and variables → Actions → Variables, add:
 
 - `VITE_SUPABASE_URL` = `https://gexpautvhgwscujyhdhr.supabase.co`
 - `VITE_SUPABASE_PUBLISHABLE_KEY` = the project's Publishable key
+- `DEPLOY_PAGES` = `true` (set this only after the Edge Function is deployed and tested)
 
 Then open Settings → Pages and select GitHub Actions. The workflow deploys only from `supabase-live-sync`; it does not deploy `main`.
 
