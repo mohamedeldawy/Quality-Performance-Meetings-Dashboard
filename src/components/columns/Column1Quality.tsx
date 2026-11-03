@@ -148,11 +148,14 @@ export const Column1Quality: React.FC = () => {
     photoUrl: '',
   });
   const [imageError, setImageError] = useState('');
+  const [memberSearch, setMemberSearch] = useState('');
 
   // Filter members based on selected tier
   const tierMembers = useMemo(() => {
     return members.filter((m) => (m.seniority || 'Middle') === selectedTier);
   }, [members, selectedTier]);
+
+  const filteredTierMembers = useMemo(() => tierMembers.filter((member) => `${member.name} ${member.role || ''} ${(member.subject || []).join(' ')}`.toLowerCase().includes(memberSearch.trim().toLowerCase())), [tierMembers, memberSearch]);
 
   // Counts for the 3 tier tabs
   const tierCounts = useMemo(() => {
@@ -410,6 +413,7 @@ export const Column1Quality: React.FC = () => {
           </form>
         )}
 
+        {members.length > 0 && isChangingMember && <input type="search" value={memberSearch} onChange={(event) => setMemberSearch(event.target.value)} placeholder="Search members by name, role, or subject..." className="w-full rounded-lg border border-blue-200 bg-white p-2 text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />}
         {/* SECTION 1: Active Member Single View vs Switcher */}
         {members.length > 0 && !isChangingMember && activeMember ? (
           /* SINGLE SELECTED MEMBER VIEW (No other members shown) */
@@ -554,7 +558,7 @@ export const Column1Quality: React.FC = () => {
                 </div>
               </div>
             ) : (
-              tierMembers.map((member) => {
+              filteredTierMembers.map((member) => {
                 const isActive = member.id === activeMemberId;
 
                 return (
