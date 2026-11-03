@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { QualityMemberProfile, QualityMemberReview, ActionItem, AppUser, DashboardSyncData, MeetingSession, SeniorityTier } from '../types/dashboard';
+import { QualityMemberProfile, QualityMemberReview, ActionItem, DepartmentActionItem, AppUser, DashboardSyncData, MeetingSession, SeniorityTier } from '../types/dashboard';
 import { INITIAL_MEMBERS } from '../data/initialData';
 import { apiRequest, clearAccessToken, saveAccessToken } from '../lib/api';
 
@@ -45,7 +45,8 @@ interface DashboardContextType {
   addOverplannedAction: (text: string, dueDate?: string) => void;
   toggleOverplannedAction: (actionId: string) => void;
   deleteOverplannedAction: (actionId: string) => void;
-  updateOverplannedDepartments: (departments: string[]) => void;
+  addOverplannedDepartmentAction: (department: string, dueDate: string) => void;
+  deleteOverplannedDepartmentAction: (actionId: string) => void;
   setOverplannedNoAction: (value: boolean) => void;
 
   // Column 5: Tickets Screen
@@ -53,7 +54,8 @@ interface DashboardContextType {
   addTicketsAction: (text: string, dueDate?: string) => void;
   toggleTicketsAction: (actionId: string) => void;
   deleteTicketsAction: (actionId: string) => void;
-  updateTicketsDepartments: (departments: string[]) => void;
+  addTicketsDepartmentAction: (department: string, dueDate: string) => void;
+  deleteTicketsDepartmentAction: (actionId: string) => void;
   setTicketsNoAction: (value: boolean) => void;
 
   // Column 6: Meeting Report
@@ -61,6 +63,7 @@ interface DashboardContextType {
   updateMeetingReportNotes: (notes: string) => void;
   updateMeetingReportRecipient: (recipient: string) => void;
   updateDepartmentReport: (department: string, fileUrl: string | null, fileName?: string, fileSize?: string) => void;
+  updateQualityReport: (fileUrl: string | null, fileName?: string, fileSize?: string) => void;
 
   resetToDefaults: () => Promise<void>;
 }
@@ -68,6 +71,15 @@ interface DashboardContextType {
 const STORAGE_KEY = 'quality_team_meeting_dashboard_v6';
 const USERS_STORAGE_KEY = 'quality_team_users_v3';
 const AUTH_SESSION_KEY = 'quality_team_auth_session_v2';
+
+const normalizeDepartmentActions = (value: unknown): DepartmentActionItem[] => {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item, index) => {
+    if (typeof item === 'string') return [{ id: `legacy-dept-${index}-${item}`, department: item, text: `Action for ${item}`, done: false, dueDate: '' }];
+    if (item && typeof item === 'object' && typeof item.department === 'string') return [{ ...item, id: item.id || `dept-${index}-${Date.now()}`, text: item.text || `Action for ${item.department}`, done: Boolean(item.done), dueDate: item.dueDate || '' } as DepartmentActionItem];
+    return [];
+  });
+};
 
 const normalizeStringList = (value: unknown): string[] => {
   const values = Array.isArray(value) ? value : typeof value === 'string' && value.trim() ? [value.trim()] : [];
@@ -86,7 +98,7 @@ const normalizeMemberProfile = (member: QualityMemberReview): QualityMemberRevie
   stages: member.stages || '',
   photoUrl: member.photoUrl || '',
   meetings: Array.isArray(member.meetings)
-    ? member.meetings.map((meeting) => ({ ...meeting, title: cleanMeetingTitle(meeting.title) }))
+    ? member.meetings.map((meeting) => ({ ...meeting, title: cleanMeetingTitle(meeting.title), overplannedNegotiation: { ...meeting.overplannedNegotiation, departmentsActions: normalizeDepartmentActions(meeting.overplannedNegotiation?.departmentsActions) }, ticketsScreen: { ...meeting.ticketsScreen, departmentsActions: normalizeDepartmentActions(meeting.ticketsScreen?.departmentsActions) } }))
     : [],
 });
 
@@ -570,7 +582,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }));
   };
 
-  const updateOverplannedDepartments = (departments: string[]) => updateCurrentMeeting((prev) => ({ ...prev, overplannedNegotiation: { ...prev.overplannedNegotiation, discussionNotes: prev.overplannedNegotiation?.discussionNotes || '', actions: prev.overplannedNegotiation?.actions || [], departmentsActions: departments } }));
+  const addOverplannedDepartmentAction = (department: string, dueDate: string) => updateCurrentMeeting((prev) => ({ ...prev, overplannedNegotiation: { ...prev.overplannedNegotiation, discussionNotes: prev.overplannedNegotiation?.discussionNotes || '', actions: prev.overplannedNegotiation?.actions || [], departmentsActions: [...normalizeDepartmentActions(prev.overplannedNegotiation?.departmentsActions), { id: `dept-op-${Date.now()}`, department, text: `Action for ${department}`, done: false, dueDate, createdBy: currentUser?.name || 'Dashboard User' }] } }));
+  const deleteOverplannedDepartmentAction = (actionId: string) => updateCurrentMeeting((prev) => ({ ...prev, overplannedNegotiation: { ...prev.overplannedNegotiation, departmentsActions: normalizeDepartmentActions(prev.overplannedNegotiation?.departmentsActions).filter((item) => item.id !== actionId) } }));
   const setOverplannedNoAction = (value: boolean) => updateCurrentMeeting((prev) => ({ ...prev, overplannedNegotiation: { ...prev.overplannedNegotiation, discussionNotes: prev.overplannedNegotiation?.discussionNotes || '', actions: value ? [] : (prev.overplannedNegotiation?.actions || []), departmentsActions: prev.overplannedNegotiation?.departmentsActions || [], noAction: value } }));
 
   const addOverplannedAction = (text: string, dueDate?: string) => {
@@ -632,7 +645,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }));
   };
 
-  const updateTicketsDepartments = (departments: string[]) => updateCurrentMeeting((prev) => ({ ...prev, ticketsScreen: { ...prev.ticketsScreen, discussionNotes: prev.ticketsScreen?.discussionNotes || '', actions: prev.ticketsScreen?.actions || [], departmentsActions: departments } }));
+  const addTicketsDepartmentAction = (department: string, dueDate: string) => updateCurrentMeeting((prev) => ({ ...prev, ticketsScreen: { ...prev.ticketsScreen, discussionNotes: prev.ticketsScreen?.discussionNotes || '', actions: prev.ticketsScreen?.actions || [], departmentsActions: [...normalizeDepartmentActions(prev.ticketsScreen?.departmentsActions), { id: `dept-tk-${Date.now()}`, department, text: `Action for ${department}`, done: false, dueDate, createdBy: currentUser?.name || 'Dashboard User' }] } }));
+  const deleteTicketsDepartmentAction = (actionId: string) => updateCurrentMeeting((prev) => ({ ...prev, ticketsScreen: { ...prev.ticketsScreen, departmentsActions: normalizeDepartmentActions(prev.ticketsScreen?.departmentsActions).filter((item) => item.id !== actionId) } }));
   const setTicketsNoAction = (value: boolean) => updateCurrentMeeting((prev) => ({ ...prev, ticketsScreen: { ...prev.ticketsScreen, discussionNotes: prev.ticketsScreen?.discussionNotes || '', actions: value ? [] : (prev.ticketsScreen?.actions || []), departmentsActions: prev.ticketsScreen?.departmentsActions || [], noAction: value } }));
 
   const addTicketsAction = (text: string, dueDate?: string) => {
@@ -698,6 +712,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const updateDepartmentReport = (department: string, fileUrl: string | null, fileName?: string, fileSize?: string) => {
     updateCurrentMeeting((prev) => ({ ...prev, meetingReport: { ...prev.meetingReport, fileUrl: prev.meetingReport?.fileUrl || null, departmentReports: { ...(prev.meetingReport?.departmentReports || {}), [department]: fileUrl ? { fileUrl, fileName, fileSize, uploadedAt: new Date().toLocaleDateString('ar-EG') } : null } } }));
   };
+
+  const updateQualityReport = (fileUrl: string | null, fileName?: string, fileSize?: string) => updateCurrentMeeting((prev) => ({ ...prev, meetingReport: { ...prev.meetingReport, fileUrl: prev.meetingReport?.fileUrl || null, qualityReport: fileUrl ? { fileUrl, fileName, fileSize, uploadedAt: new Date().toLocaleDateString('en-US') } : null } }));
 
   const updateMeetingReportNotes = (notes: string) => {
     updateCurrentMeeting((prev) => ({
@@ -775,18 +791,21 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         addOverplannedAction,
         toggleOverplannedAction,
         deleteOverplannedAction,
-        updateOverplannedDepartments,
+        addOverplannedDepartmentAction,
+        deleteOverplannedDepartmentAction,
         setOverplannedNoAction,
         updateTicketsDiscussion,
         addTicketsAction,
         toggleTicketsAction,
         deleteTicketsAction,
-        updateTicketsDepartments,
+        addTicketsDepartmentAction,
+        deleteTicketsDepartmentAction,
         setTicketsNoAction,
         updateMeetingReportFile,
         updateMeetingReportNotes,
         updateMeetingReportRecipient,
         updateDepartmentReport,
+        updateQualityReport,
         resetToDefaults,
       }}
     >
