@@ -1,7 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { randomBytes, createHash, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
+import { randomBytes, createHmac, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 import { INITIAL_MEMBERS } from './src/data/initialData.ts';
 import type { QualityMemberReview, AppUser } from './src/types/dashboard.ts';
@@ -68,8 +68,7 @@ const verifyPassword = async (password: string, stored: string) => {
   const actual = await scrypt(password, salt, expected.length) as Buffer;
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 };
-const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
-const cookieOptions = { httpOnly: true, secure: isProduction, sameSite: 'lax' as const, path: '/', maxAge: SESSION_TTL_MS };
+const hashToken = (value: string) => createHmac('sha256', SESSION_SECRET).update(value).digest('hex');
 const getToken = (req: express.Request) => {
   const raw = req.headers.cookie || '';
   const item = raw.split(';').map(v => v.trim()).find(v => v.startsWith('qpd_session='));
@@ -78,7 +77,7 @@ const getToken = (req: express.Request) => {
 async function getSessionUser(req: express.Request): Promise<PublicUser | null> {
   const token = getToken(req);
   if (!token || !configured()) return null;
-  const rows = await supabase<any[]>('dashboard_sessions', { query: `select=user_id,expires_at&token_hash=eq.${sha256(token)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1` });
+  const rows = await supabase<any[]>('dashboard_sessions', { query: `select=user_id,expires_at&token_hash=eq.${hashToken(token)}&expires_at=gt.${encodeURIComponent(new Date().toISOString())}&limit=1` });
   if (!rows?.length) return null;
   const users = await supabase<any[]>('dashboard_users', { query: `select=id,username,name,role,color,photo_url&id=eq.${encodeURIComponent(rows[0].user_id)}&limit=1` });
   return users?.[0] ? publicUser(users[0]) : null;
@@ -164,7 +163,7 @@ app.post('/api/login', async (req, res) => {
     const token = randomBytes(32).toString('base64url');
     await supabase('dashboard_sessions', {
       method: 'POST', prefer: 'return=minimal',
-      body: [{ token_hash: sha256(token), user_id: user.id, expires_at: new Date(Date.now() + SESSION_TTL_MS).toISOString() }],
+      body: [{ token_hash: hashToken(token), user_id: user.id, expires_at: new Date(Date.now() + SESSION_TTL_MS).toISOString() }],
     });
     res.setHeader('Set-Cookie', `qpd_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}${isProduction ? '; Secure' : ''}`);
     return res.json({ success: true, user: publicUser(user) });
@@ -177,7 +176,7 @@ app.get('/api/session', requireAuth, (req, res) => res.json({ success: true, use
 app.post('/api/logout', async (req, res) => {
   try {
     const token = getToken(req);
-    if (token && configured()) await supabase('dashboard_sessions', { method: 'DELETE', query: `token_hash=eq.${sha256(token)}`, prefer: 'return=minimal' });
+    if (token && configured()) await supabase('dashboard_sessions', { method: 'DELETE', query: `token_hash=eq.${hashToken(token)}`, prefer: 'return=minimal' });
   } catch (error) { console.error('[Logout]', error); }
   res.setHeader('Set-Cookie', `qpd_session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${isProduction ? '; Secure' : ''}`);
   res.json({ success: true });
