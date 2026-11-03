@@ -55,6 +55,7 @@ export interface MeetingSession {
     screenshotUrl?: string | null;
     departmentsActions?: DepartmentActionItem[];
     noAction?: boolean;
+    departmentsNoAction?: boolean;
   };
 
   // 6. Meeting Report
