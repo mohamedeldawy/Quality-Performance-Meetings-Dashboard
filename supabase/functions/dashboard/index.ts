@@ -206,6 +206,31 @@ Deno.serve(async (req: Request) => {
       if (token) await db("dashboard_sessions", `token_hash=eq.${await hmac(token)}`, { method: "DELETE" });
       return json({ success: true });
     }
+    if (action === "image-upload") {
+      const user = await requireUser(req);
+      const dataUrl = String(body.dataUrl || "");
+      const folder = body.folder === "users" ? "users" : "members";
+      const match = dataUrl.match(/^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/);
+      if (!match) return json({ success: false, error: "صيغة الصورة غير مدعومة. استخدم JPG أو PNG أو WEBP." }, 400);
+      const bytes = Uint8Array.from(atob(match[2]), (char) => char.charCodeAt(0));
+      if (bytes.byteLength > 700 * 1024) return json({ success: false, error: "حجم الصورة بعد الضغط أكبر من 700KB." }, 413);
+      const bucket = "quality-dashboard-images";
+      const bucketResponse = await fetch(`${SUPABASE_URL}/storage/v1/bucket`, {
+        method: "POST",
+        headers: { apikey: SUPABASE_SECRET_KEY, Authorization: `Bearer ${SUPABASE_SECRET_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ id: bucket, name: bucket, public: true, file_size_limit: 1048576, allowed_mime_types: ["image/jpeg", "image/png", "image/webp"] }),
+      });
+      if (!bucketResponse.ok && bucketResponse.status !== 409) throw new Error(`تعذر تجهيز مساحة الصور (${bucketResponse.status}): ${(await bucketResponse.text()).slice(0, 180)}`);
+      const extension = match[1] === "jpeg" ? "jpg" : match[1];
+      const objectPath = `${folder}/${crypto.randomUUID()}.${extension}`;
+      const upload = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${objectPath}`, {
+        method: "POST",
+        headers: { apikey: SUPABASE_SECRET_KEY, Authorization: `Bearer ${SUPABASE_SECRET_KEY}`, "Content-Type": `image/${match[1]}`, "x-upsert": "true" },
+        body: bytes,
+      });
+      if (!upload.ok) throw new Error(`فشل رفع الصورة إلى Storage (${upload.status}): ${(await upload.text()).slice(0, 180)}`);
+      return json({ success: true, publicUrl: `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${objectPath}`, uploadedBy: user.id });
+    }
     const user = await requireUser(req);
     if (action === "dashboard-read") return json({ success: true, data: await readDashboard() });
     if (action === "dashboard-write") return json(await writeDashboard(body, user));
