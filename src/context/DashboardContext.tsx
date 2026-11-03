@@ -806,7 +806,6 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         updateMeetingReportRecipient,
         updateDepartmentReport,
         updateQualityReport,
-        updateQualityReport,
         resetToDefaults,
       }}
     >
