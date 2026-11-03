@@ -571,7 +571,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const updateOverplannedDepartments = (departments: string[]) => updateCurrentMeeting((prev) => ({ ...prev, overplannedNegotiation: { ...prev.overplannedNegotiation, discussionNotes: prev.overplannedNegotiation?.discussionNotes || '', actions: prev.overplannedNegotiation?.actions || [], departmentsActions: departments } }));
-  const setOverplannedNoAction = (value: boolean) => updateCurrentMeeting((prev) => ({ ...prev, overplannedNegotiation: { ...prev.overplannedNegotiation, discussionNotes: prev.overplannedNegotiation?.discussionNotes || '', actions: prev.overplannedNegotiation?.actions || [], noAction: value } }));
+  const setOverplannedNoAction = (value: boolean) => updateCurrentMeeting((prev) => ({ ...prev, overplannedNegotiation: { ...prev.overplannedNegotiation, discussionNotes: prev.overplannedNegotiation?.discussionNotes || '', actions: value ? [] : (prev.overplannedNegotiation?.actions || []), departmentsActions: prev.overplannedNegotiation?.departmentsActions || [], noAction: value } }));
 
   const addOverplannedAction = (text: string, dueDate?: string) => {
     if (!text.trim()) return;
@@ -589,6 +589,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       overplannedNegotiation: {
         discussionNotes: prev.overplannedNegotiation?.discussionNotes || '',
         actions: [...(prev.overplannedNegotiation?.actions || []), newAction],
+        departmentsActions: prev.overplannedNegotiation?.departmentsActions || [],
+        noAction: prev.overplannedNegotiation?.noAction || false,
       },
     }));
   };
@@ -599,6 +601,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       overplannedNegotiation: {
         discussionNotes: prev.overplannedNegotiation?.discussionNotes || '',
         actions: (prev.overplannedNegotiation?.actions || []).map((a) => (a.id === actionId ? { ...a, done: !a.done } : a)),
+        departmentsActions: prev.overplannedNegotiation?.departmentsActions || [],
+        noAction: prev.overplannedNegotiation?.noAction || false,
       },
     }));
   };
@@ -609,6 +613,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       overplannedNegotiation: {
         discussionNotes: prev.overplannedNegotiation?.discussionNotes || '',
         actions: (prev.overplannedNegotiation?.actions || []).filter((a) => a.id !== actionId),
+        departmentsActions: prev.overplannedNegotiation?.departmentsActions || [],
+        noAction: prev.overplannedNegotiation?.noAction || false,
       },
     }));
   };
@@ -627,7 +633,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const updateTicketsDepartments = (departments: string[]) => updateCurrentMeeting((prev) => ({ ...prev, ticketsScreen: { ...prev.ticketsScreen, discussionNotes: prev.ticketsScreen?.discussionNotes || '', actions: prev.ticketsScreen?.actions || [], departmentsActions: departments } }));
-  const setTicketsNoAction = (value: boolean) => updateCurrentMeeting((prev) => ({ ...prev, ticketsScreen: { ...prev.ticketsScreen, discussionNotes: prev.ticketsScreen?.discussionNotes || '', actions: prev.ticketsScreen?.actions || [], noAction: value } }));
+  const setTicketsNoAction = (value: boolean) => updateCurrentMeeting((prev) => ({ ...prev, ticketsScreen: { ...prev.ticketsScreen, discussionNotes: prev.ticketsScreen?.discussionNotes || '', actions: value ? [] : (prev.ticketsScreen?.actions || []), departmentsActions: prev.ticketsScreen?.departmentsActions || [], noAction: value } }));
 
   const addTicketsAction = (text: string, dueDate?: string) => {
     if (!text.trim()) return;
@@ -645,6 +651,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       ticketsScreen: {
         discussionNotes: prev.ticketsScreen?.discussionNotes || '',
         actions: [...(prev.ticketsScreen?.actions || []), newAction],
+        departmentsActions: prev.ticketsScreen?.departmentsActions || [],
+        noAction: prev.ticketsScreen?.noAction || false,
       },
     }));
   };
@@ -655,6 +663,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       ticketsScreen: {
         discussionNotes: prev.ticketsScreen?.discussionNotes || '',
         actions: (prev.ticketsScreen?.actions || []).map((a) => (a.id === actionId ? { ...a, done: !a.done } : a)),
+        departmentsActions: prev.ticketsScreen?.departmentsActions || [],
+        noAction: prev.ticketsScreen?.noAction || false,
       },
     }));
   };
@@ -665,6 +675,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       ticketsScreen: {
         discussionNotes: prev.ticketsScreen?.discussionNotes || '',
         actions: (prev.ticketsScreen?.actions || []).filter((a) => a.id !== actionId),
+        departmentsActions: prev.ticketsScreen?.departmentsActions || [],
+        noAction: prev.ticketsScreen?.noAction || false,
       },
     }));
   };
