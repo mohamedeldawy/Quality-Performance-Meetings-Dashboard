@@ -186,7 +186,7 @@ export const Column4Overplanned: React.FC = () => {
             <div className="flex items-center gap-2"><input required type="date" value={departmentDueDate} onChange={(event) => setDepartmentDueDate(event.target.value)} className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white p-2 text-xs" /><button type="submit" className="rounded-lg bg-rose-600 px-3 py-2 text-xs font-bold text-white"><Plus className="inline h-3 w-3" /> Add Action</button></div>
           </form>
           <div className="space-y-1.5">{departments.map((item) => <div key={item.id} className="flex items-center justify-between gap-2 rounded-lg border bg-white p-2 text-[11px]"><span className="font-semibold">{item.department}</span><span>Due: {item.dueDate || '-'}</span><button type="button" onClick={() => deleteOverplannedDepartmentAction(item.id)} className="text-rose-600"><Trash2 className="h-3.5 w-3.5" /></button></div>)}</div>
-          </>
+          </>}
         </div>
       </div>
 
