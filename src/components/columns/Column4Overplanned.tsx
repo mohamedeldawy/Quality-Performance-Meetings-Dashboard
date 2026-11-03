@@ -56,7 +56,7 @@ export const Column4Overplanned: React.FC = () => {
 
       {/* Content Form */}
       <div className="flex-1 p-3 space-y-3.5 overflow-y-auto" dir="rtl">
-        {/* الجزء الأول: تفاصيل النقاش */}
+        {/* Quality Discussion */}
         <div className="space-y-1.5">
           <label className="block text-xs font-bold text-slate-800 flex items-center justify-between">
             <span className="flex items-center gap-1.5">
