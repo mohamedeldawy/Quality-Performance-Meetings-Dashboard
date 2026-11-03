@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { DashboardProvider, useDashboard } from './context/DashboardContext';
 import { LoginScreen } from './components/LoginScreen';
 import { UsersManagementModal } from './components/UsersManagementModal';
@@ -33,6 +33,13 @@ const DashboardContent: React.FC = () => {
 
   const [showUsersModal, setShowUsersModal] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(85); // Default comfortable scale 85% so all 6 columns fit gracefully!
+  const mainScrollRef = useRef<HTMLElement>(null);
+  const bottomScrollRef = useRef<HTMLDivElement>(null);
+  const syncHorizontalScroll = (source: 'main' | 'bottom') => {
+    const from = source === 'main' ? mainScrollRef.current : bottomScrollRef.current;
+    const to = source === 'main' ? bottomScrollRef.current : mainScrollRef.current;
+    if (from && to && Math.abs(from.scrollLeft - to.scrollLeft) > 1) to.scrollLeft = from.scrollLeft;
+  };
 
   // If user is not authenticated, show the clean LoginScreen
   if (!currentUser) {
@@ -195,7 +202,7 @@ const DashboardContent: React.FC = () => {
       </header>
 
       {/* Main 6 Columns Container */}
-      <main className="flex-1 p-3 overflow-x-auto overflow-y-hidden scrollbar-thin">
+      <main ref={mainScrollRef} onScroll={() => syncHorizontalScroll('main')} className="flex-1 p-3 overflow-x-auto overflow-y-hidden scrollbar-thin">
         <div
           dir="ltr"
           style={{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top left', width: `${100 / (zoomLevel / 100)}%` }}
@@ -234,6 +241,12 @@ const DashboardContent: React.FC = () => {
           </>}
         </div>
       </main>
+
+      {members.length > 0 && (
+        <div ref={bottomScrollRef} onScroll={() => syncHorizontalScroll('bottom')} aria-label="Dashboard horizontal navigation" className="h-5 shrink-0 overflow-x-auto overflow-y-hidden border-t border-slate-200 bg-slate-100 scrollbar-thin">
+          <div className="h-1 w-[1925px]" />
+        </div>
+      )}
 
       {/* Users Management Modal */}
       <UsersManagementModal
