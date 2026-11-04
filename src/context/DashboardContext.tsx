@@ -261,6 +261,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const lastLocalEditAtRef = useRef<number>(0);
   const refreshInProgressRef = useRef<boolean>(false);
 
+  // Keep an immediately updated snapshot so rapid keystrokes never build
+  // successive edits from a stale React render.
+  const membersRef = useRef<QualityMemberReview[]>(members);
+  useEffect(() => { membersRef.current = members; }, [members]);
+
   // Active member and active meeting (bulletproof against undefined)
   const activeMember: QualityMemberReview =
     members.find((m) => m.id === activeMemberId) || members[0] || INITIAL_MEMBERS[0];
@@ -422,12 +427,13 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Update current member's ACTIVE MEETING
   const updateCurrentMeeting = (updater: (prevMeeting: MeetingSession) => MeetingSession) => {
-    if (members.length === 0) return;
+    const currentMembers = membersRef.current;
+    if (currentMembers.length === 0) return;
     const nowFormatted = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
     const authorName = currentUser ? currentUser.name : 'مستخدم الداشبورد';
 
-    const updatedMembers = members.map((m) => {
-      if (m.id !== activeMember.id) return m;
+    const updatedMembers = currentMembers.map((m) => {
+      if (m.id !== activeMemberId) return m;
 
       const currentMeetings = Array.isArray(m.meetings) && m.meetings.length > 0 ? m.meetings : [activeMeeting];
       const updatedMeetings = currentMeetings.map((mtg) => {
@@ -443,8 +449,10 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       };
     });
 
+    // Update the ref synchronously before React schedules the next render.
+    membersRef.current = updatedMembers;
     setMembers(updatedMembers);
-    pushToServer(updatedMembers);
+    void pushToServer(updatedMembers);
   };
 
   // Member Management
