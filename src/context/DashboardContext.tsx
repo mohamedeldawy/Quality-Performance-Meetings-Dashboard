@@ -97,7 +97,7 @@ const normalizeStringList = (value: unknown): string[] => {
 // the separate Storage upload request that is currently failing at the network layer.
 const uploadDashboardImage = async (dataUrl: string | undefined, folder: 'members' | 'users'): Promise<string> => {
   if (!dataUrl) return '';
-  if (!/^data:image\\/(jpeg|png|webp);base64,/.test(dataUrl)) {
+  if (!/^data:image\/(jpeg|png|webp);base64,/.test(dataUrl)) {
     throw new Error('صيغة الصورة غير مدعومة. استخدم JPG أو PNG أو WEBP.');
   }
   const estimatedBytes = Math.floor((dataUrl.length - dataUrl.indexOf(',') - 1) * 3 / 4);
