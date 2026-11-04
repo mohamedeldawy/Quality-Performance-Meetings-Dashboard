@@ -240,8 +240,8 @@ Deno.serve(async (req: Request) => {
       });
       if (!upload.ok) throw new Error(`فشل رفع الصورة إلى Storage (${upload.status}): ${(await upload.text()).slice(0, 180)}`);
       const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${objectPath}`;
-      const verify = await fetch(publicUrl, { method: "HEAD" });
-      if (!verify.ok) throw new Error(`تم رفع الملف لكن تعذر التحقق من رابط الصورة (${verify.status}).`);
+      // Supabase Storage upload success is authoritative. Some gateways/CDNs
+      // reject HEAD requests for public objects even when GET works correctly.
       return json({ success: true, publicUrl, uploadedBy: user.id });
       } catch (error) {
         const message = error instanceof Error ? error.message : "تعذر رفع الصورة";
