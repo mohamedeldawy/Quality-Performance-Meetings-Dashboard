@@ -13,7 +13,7 @@ const resizeUserPhoto = (file: File): Promise<string> =>
     reader.onload = () => {
       const image = new Image();
       image.onload = () => {
-        const scale = Math.min(1, 320 / Math.max(image.width, image.height));
+        const scale = Math.min(1, 256 / Math.max(image.width, image.height));
         const canvas = document.createElement('canvas');
         canvas.width = Math.max(1, Math.round(image.width * scale));
         canvas.height = Math.max(1, Math.round(image.height * scale));
@@ -23,7 +23,7 @@ const resizeUserPhoto = (file: File): Promise<string> =>
           return;
         }
         context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.62));
+        resolve(canvas.toDataURL('image/jpeg', 0.5));
       };
       image.onerror = () => reject(new Error('تعذر قراءة الصورة'));
       image.src = String(reader.result);
