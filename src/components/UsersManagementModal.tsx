@@ -48,6 +48,16 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
 
   if (!isOpen) return null;
 
+  const cancelAddUser = () => {
+    setShowAddForm(false);
+    setName('');
+    setUsername('');
+    setPassword('');
+    setRole('Quality Engineer');
+    setNewPhotoUrl('');
+    setStatusMessage(null);
+  };
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !username.trim() || !password.trim()) return;
@@ -134,7 +144,7 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setShowAddForm(!showAddForm)}
+              onClick={() => showAddForm ? cancelAddUser() : setShowAddForm(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-semibold transition-colors"
             >
               <UserPlus className="w-3.5 h-3.5" />
@@ -247,7 +257,7 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
                 <button
                   type="button"
-                  onClick={() => setShowAddForm(false)}
+                  onClick={cancelAddUser}
                   className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-200 rounded-lg"
                 >
                   إلغاء
