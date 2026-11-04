@@ -337,6 +337,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       if (!res.ok || !json.success || !json.data) {
         throw new Error(json.error || `تعذر تحديث البيانات من السيرفر (${res.status})`);
       }
+      // A polling response may have been requested before a user started typing.
+      // Re-check immediately before applying it so an in-flight stale response cannot erase a draft.
+      if (!manual && (pendingLocalWritesRef.current > 0 || Date.now() - lastLocalEditAtRef.current < 20000)) return;
       const remoteData: DashboardSyncData = json.data;
       // A manual refresh is an explicit request to reload the server copy.
       if (Array.isArray(remoteData.members)) setMembers(remoteData.members.map(normalizeMemberProfile));
