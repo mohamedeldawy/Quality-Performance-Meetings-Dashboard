@@ -248,10 +248,10 @@ export const Column1Quality: React.FC = () => {
             setShowAddMemberForm(!showAddMemberForm);
           }}
           className="flex items-center gap-1 px-2 py-1 bg-blue-700 hover:bg-blue-800 text-white rounded text-[11px] font-semibold transition-colors shadow-xs"
-          title="إضافة عضو كواليتي جديد"
+          title="Add Teacher"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>{showAddMemberForm ? 'إلغاء' : '+ عضو جديد'}</span>
+          <span>{showAddMemberForm ? 'إلغاء' : '+ Add Teacher'}</span>
         </button>
       </div>
 
@@ -295,7 +295,7 @@ export const Column1Quality: React.FC = () => {
                     isSelected ? 'bg-indigo-700/90 text-indigo-100' : 'bg-slate-100 text-slate-600'
                   }`}
                 >
-                  {count} {count === 1 ? 'عضو' : 'أعضاء'}
+                  {count} {count === 1 ? 'Teacher' : 'Teachers'}
                 </span>
               </button>
             );
@@ -314,11 +314,11 @@ export const Column1Quality: React.FC = () => {
             <div className="flex items-center justify-between text-xs font-bold text-blue-950">
               <span className="flex items-center gap-1">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                <span>{editingMemberId ? 'تعديل ملف عضو الجودة:' : 'إضافة عضو جودة جديد:'}</span>
+                <span>{editingMemberId ? 'Edit Teacher Profile:' : 'Add New Teacher:'}</span>
               </span>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">اسم العضو *</label>
+              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Teacher Name *</label>
               <input
                 type="text"
                 required
@@ -408,7 +408,7 @@ export const Column1Quality: React.FC = () => {
               type="submit"
               className="w-full py-1.5 bg-blue-700 hover:bg-blue-800 text-white rounded text-xs font-bold transition-colors"
             >
-              {editingMemberId ? 'حفظ تعديلات العضو' : 'حفظ وإضافة العضو'}
+              {editingMemberId ? 'Save Teacher Changes' : 'Save & Add Teacher'}
             </button>
           </form>
         )}
@@ -420,14 +420,14 @@ export const Column1Quality: React.FC = () => {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between px-1">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                العضو المحدد (Selected Member):
+                Selected Teacher:
               </span>
               <button
                 type="button"
                 onClick={() => setIsChangingMember(true)}
                 className="flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
               >
-                <span>تغيير العضو</span>
+                <span>Change Teacher</span>
                 <ChevronDown className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -435,7 +435,7 @@ export const Column1Quality: React.FC = () => {
             <div
               onClick={() => setIsChangingMember(true)}
               className="p-3 bg-gradient-to-br from-blue-50 to-white border-2 border-blue-300 rounded-xl shadow-xs relative cursor-pointer"
-              title="اضغط لإغلاق بطاقة العضو والعودة للقائمة"
+              title="اضغط لإغلاق Teacher Card والعودة للقائمة"
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2.5 min-w-0">
@@ -491,14 +491,14 @@ export const Column1Quality: React.FC = () => {
                   className="flex items-center gap-1 px-2 py-1 bg-white border border-indigo-200 hover:bg-indigo-50 text-indigo-700 rounded-md font-semibold transition-colors shadow-2xs"
                 >
                   <Users className="w-3 h-3" />
-                  <span>تبديل العضو من قائمة {selectedTier}</span>
+                  <span>تبديل العضو من {selectedTier} Teachers</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={(event) => { event.stopPropagation(); startEditingMember(); }}
                   className="p-1 text-blue-700 hover:text-blue-900 transition-colors"
-                  title="تعديل بيانات العضو"
+                  title="Edit Teacher Details"
                 >
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
@@ -513,7 +513,7 @@ export const Column1Quality: React.FC = () => {
                       }
                     }}
                     className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
-                    title="حذف هذا العضو"
+                    title="Delete this Teacher"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -526,7 +526,7 @@ export const Column1Quality: React.FC = () => {
           <div className="space-y-1.5 bg-slate-50/80 p-2 rounded-xl border border-slate-200">
             <div className="flex items-center justify-between px-1">
               <span className="text-[11px] font-bold text-slate-700">
-                اختر عضوًا من Grade ({selectedTier}):
+                Choose a Teacher from Grade ({selectedTier}):
               </span>
               {activeMember && (
                 <button
@@ -540,7 +540,7 @@ export const Column1Quality: React.FC = () => {
             </div>
 
             {members.length === 0 ? (
-              <div className="text-center py-4 text-xs text-slate-600 bg-white rounded-lg border border-dashed border-indigo-300">لا يوجد أعضاء حاليًا. استخدم زر «عضو جديد» بالأعلى لإضافة أول عضو.</div>
+              <div className="text-center py-4 text-xs text-slate-600 bg-white rounded-lg border border-dashed border-indigo-300">No teachers yet. Use “Add Teacher” above to add the first teacher.</div>
             ) : tierMembers.length === 0 ? (
               <div className="text-center py-4 text-xs text-slate-500 bg-white rounded-lg border border-dashed border-slate-300">
                 لا يوجد أعضاء مسجلون في Grade <strong className="text-indigo-600">{selectedTier}</strong> حاليًا.
@@ -553,7 +553,7 @@ export const Column1Quality: React.FC = () => {
                     }}
                     className="px-2.5 py-1 bg-indigo-600 text-white rounded text-xs font-bold"
                   >
-                    + إضافة أول عضو لـ {selectedTier}
+                    + Add First Teacher to {selectedTier}
                   </button>
                 </div>
               </div>
@@ -631,7 +631,7 @@ export const Column1Quality: React.FC = () => {
                 type="button"
                 onClick={() => addMeeting()}
                 className="flex items-center gap-1 px-2 py-0.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded text-[11px] font-bold transition-colors shadow-2xs"
-                title="إضافة ميتينج جديد لهذا العضو لشهر آخر"
+                title="إضافة ميتينج جديد for this teacher لشهر آخر"
               >
                 <Plus className="w-3 h-3" />
                 <span>+ New Meeting</span>
