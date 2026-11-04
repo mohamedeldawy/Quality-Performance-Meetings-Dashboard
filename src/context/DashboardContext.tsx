@@ -242,6 +242,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const isSavingRef = useRef<boolean>(false);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const pendingLocalWritesRef = useRef<number>(0);
+  const saveFailedRef = useRef<boolean>(false);
 
   // Active member and active meeting (bulletproof against undefined)
   const activeMember: QualityMemberReview =
@@ -294,6 +295,9 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setSyncStatus('syncing');
     try {
       await saveQueueRef.current;
+      if (saveFailedRef.current) {
+        throw new Error('فيه تعديلات محلية فشل حفظها. لن يتم استبدالها ببيانات السيرفر؛ أعد المحاولة بعد التأكد من الاتصال.');
+      }
       if (pendingLocalWritesRef.current > 0) {
         await new Promise<void>((resolve) => {
           const check = () => pendingLocalWritesRef.current === 0 ? resolve() : window.setTimeout(check, 100);
@@ -339,10 +343,12 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || `فشل حفظ البيانات (${res.status})`);
         if (data.version) versionRef.current = data.version;
+        saveFailedRef.current = false;
         setLastUpdatedBy(data.lastUpdatedBy || currentUser?.name || 'النظام');
         setLastUpdatedAt(data.lastUpdatedAt || 'الآن');
         setSyncStatus('synced');
       } catch (error) {
+        saveFailedRef.current = true;
         console.error('Dashboard save failed:', error);
         setSyncStatus('offline');
       } finally {
