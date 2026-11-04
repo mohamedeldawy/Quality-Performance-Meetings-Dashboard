@@ -90,12 +90,19 @@ const normalizeStringList = (value: unknown): string[] => {
   return Array.from(new Set(values.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean)));
 };
 
-const uploadDashboardImage = async (dataUrl: string | undefined, folder: 'members' | 'users'): Promise<string> => {
-  if (!dataUrl || !dataUrl.startsWith('data:image/')) return dataUrl || '';
-  const response = await apiRequest('image-upload', { dataUrl, folder });
-  const result = await response.json();
-  if (!response.ok || !result.publicUrl) throw new Error(result.error || 'تعذر حفظ الصورة على السيرفر');
-  return result.publicUrl;
+// User/member avatars are deliberately stored as compact data URLs in Postgres.
+ // This avoids a separate Storage bucket, bucket policies, and signed/public URL failures.
+ // Images are resized in the UI before reaching this function.
+const uploadDashboardImage = async (dataUrl: string | undefined, _folder: 'members' | 'users'): Promise<string> => {
+  if (!dataUrl) return '';
+  if (!dataUrl.startsWith('data:image/jpeg;base64,')) {
+    throw new Error('صيغة الصورة غير صالحة. أعد اختيار صورة JPG.');
+  }
+  const estimatedBytes = Math.floor((dataUrl.length - dataUrl.indexOf(',') - 1) * 3 / 4);
+  if (estimatedBytes > 220 * 1024) {
+    throw new Error('حجم الصورة كبير بعد الضغط. اختر صورة أصغر.');
+  }
+  return dataUrl;
 };
 
 const cleanMeetingTitle = (title: string) => title.replace(/\s*\(فحص الشاشات والتسجيل\)/g, '').trim();
