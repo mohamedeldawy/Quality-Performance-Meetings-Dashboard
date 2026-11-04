@@ -107,6 +107,21 @@ const uploadDashboardImage = async (dataUrl: string | undefined, folder: 'member
       ? 'حجم صورة المستخدم كبير بعد الضغط. اختر صورة أصغر من 700KB.'
       : 'حجم صورة المدرس كبير بعد الضغط. اختر صورة أصغر.');
   }
+  if (folder === 'users') {
+    try {
+      const response = await apiRequest('image-upload', { dataUrl, folder: 'users' });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success || !result.publicUrl) {
+        throw new Error(result.error || `فشل رفع صورة المستخدم (HTTP ${response.status}).`);
+      }
+      return result.publicUrl as string;
+    } catch (error) {
+      if (error instanceof TypeError && /fetch/i.test(error.message)) {
+        throw new Error('تعذر الاتصال بخدمة رفع الصور. تحقق من نشر تحديث Supabase ثم أعد المحاولة.');
+      }
+      throw error;
+    }
+  }
   return dataUrl;
 };
 
