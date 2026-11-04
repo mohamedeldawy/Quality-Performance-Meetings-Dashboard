@@ -137,18 +137,27 @@ const DashboardContent: React.FC = () => {
                     : 'bg-rose-500'
                 }`}
               />
-              <span>{syncStatus === 'saving' ? 'جاري الحفظ...' : syncStatus === 'syncing' ? 'مزامنة...' : 'محفوظ ومشترك'}</span>
+              <span>{syncStatus === 'saving' ? 'جاري الحفظ...' : syncStatus === 'syncing' ? 'تحديث البيانات...' : syncStatus === 'offline' ? 'فشل الاتصال / الحفظ' : 'محفوظ ومشترك'}</span>
             </span>
             <span className="text-white/40">·</span>
             <span className="truncate max-w-[150px]">
               آخر تعديل: <strong className="text-white">{lastUpdatedBy}</strong>
             </span>
             <button
-              onClick={() => refreshFromServer()}
-              className="p-1 text-sky-100 hover:text-amber-300 transition-colors"
+              type="button"
+              onClick={async () => {
+                try {
+                  await refreshFromServer();
+                } catch (error) {
+                  window.alert(error instanceof Error ? error.message : 'تعذر تحديث البيانات من السيرفر.');
+                }
+              }}
+              disabled={syncStatus === 'syncing' || syncStatus === 'saving'}
+              className="p-1 text-sky-100 hover:text-amber-300 transition-colors disabled:opacity-40 disabled:cursor-wait"
               title="تحديث البيانات من السيرفر"
+              aria-label="تحديث البيانات من السيرفر"
             >
-              <RefreshCw className="w-3 h-3" />
+              <RefreshCw className={`w-3 h-3 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
