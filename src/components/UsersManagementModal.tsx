@@ -150,12 +150,10 @@ export const UsersManagementModal: React.FC<UsersManagementModalProps> = ({ isOp
         </div>
 
         {/* Status Message Notification */}
-        {statusMessage && (
-          <div className="bg-emerald-50 border-b border-emerald-200 px-4 py-2 text-xs font-semibold text-emerald-800 flex items-center gap-2">
-            <Check className="w-4 h-4 text-emerald-600" />
+        {statusMessage && (() => { const isSuccess = statusMessage.startsWith('تم'); return <div className={`${isSuccess ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-rose-50 border-rose-200 text-rose-800'} border-b px-4 py-2 text-xs font-semibold flex items-center gap-2`}>
+            {isSuccess ? <Check className="w-4 h-4 text-emerald-600" /> : <span className="text-rose-600">!</span>}
             <span>{statusMessage}</span>
-          </div>
-        )}
+          </div>; })()}
 
         {/* Modal Content */}
         <div className="p-4 overflow-y-auto space-y-4 flex-1">
