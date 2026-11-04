@@ -22,7 +22,7 @@ export const QUALITY_SUBJECT_OPTIONS = [
 export const QUALITY_GRADE_OPTIONS: Record<SeniorityTier, string[]> = {
   Junior: ['Jr4', 'Jr5', 'Jr6'],
   Middle: ['M1', 'M2', 'M3'],
-  Senior: [],
+  Senior: ['S1', 'S2', 'S3', 'S2bac'],
 };
 
 export const QUALITY_COURSE_OPTIONS = Array.from(new Set([
