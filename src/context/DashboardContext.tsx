@@ -243,6 +243,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const pendingLocalWritesRef = useRef<number>(0);
   const saveFailedRef = useRef<boolean>(false);
+  const lastLocalEditAtRef = useRef<number>(0);
+  const refreshInProgressRef = useRef<boolean>(false);
 
   // Active member and active meeting (bulletproof against undefined)
   const activeMember: QualityMemberReview =
@@ -291,7 +293,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Fetch the latest saved state. Manual refresh waits for queued writes first,
   // then applies the server response even when its version matches this tab.
-  const refreshFromServer = async () => {
+  const refreshFromServer = async (manual = true) => {
+    // Polling must never replace a draft while someone is typing or saving.
+    if (!manual && (pendingLocalWritesRef.current > 0 || Date.now() - lastLocalEditAtRef.current < 20000 || refreshInProgressRef.current)) return;
+    if (refreshInProgressRef.current) return;
+    refreshInProgressRef.current = true;
     setSyncStatus('syncing');
     try {
       await saveQueueRef.current;
@@ -327,12 +333,15 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch (error) {
       console.error('Dashboard refresh failed:', error);
       setSyncStatus('offline');
-      throw error;
+      if (manual) throw error;
+    } finally {
+      refreshInProgressRef.current = false;
     }
   };
 
   // Push updates to server
   const pushToServer = (newMembers: QualityMemberReview[], newActiveId?: string) => {
+    lastLocalEditAtRef.current = Date.now();
     pendingLocalWritesRef.current += 1;
     isSavingRef.current = true;
     setSyncStatus('saving');
@@ -381,7 +390,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   // Poll shared state so edits from other team members appear automatically.
   useEffect(() => {
     if (!currentUser) return;
-    const timer = window.setInterval(() => { void refreshFromServer(); }, 5000);
+    const timer = window.setInterval(() => { void refreshFromServer(false); }, 5000);
     return () => window.clearInterval(timer);
   }, [currentUser]);
 
@@ -614,10 +623,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     updateCurrentMeeting((prev) => ({
       ...prev,
       overplannedNegotiation: {
+        ...prev.overplannedNegotiation,
         discussionNotes: notes,
         actions: prev.overplannedNegotiation?.actions || [],
-      departmentsActions: prev.overplannedNegotiation?.departmentsActions || [],
-      noAction: prev.overplannedNegotiation?.noAction || false,
+        departmentsActions: prev.overplannedNegotiation?.departmentsActions || [],
+        noAction: prev.overplannedNegotiation?.noAction || false,
       },
     }));
   };
@@ -678,10 +688,11 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     updateCurrentMeeting((prev) => ({
       ...prev,
       ticketsScreen: {
+        ...prev.ticketsScreen,
         discussionNotes: notes,
         actions: prev.ticketsScreen?.actions || [],
-      departmentsActions: prev.ticketsScreen?.departmentsActions || [],
-      noAction: prev.ticketsScreen?.noAction || false,
+        departmentsActions: prev.ticketsScreen?.departmentsActions || [],
+        noAction: prev.ticketsScreen?.noAction || false,
       },
     }));
   };
