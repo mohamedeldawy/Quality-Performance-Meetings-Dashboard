@@ -93,26 +93,21 @@ const normalizeStringList = (value: unknown): string[] => {
 // User/member avatars are deliberately stored as compact data URLs in Postgres.
  // This avoids a separate Storage bucket, bucket policies, and signed/public URL failures.
  // Images are resized in the UI before reaching this function.
+// Keep profile photos inline in the existing text/JSON fields. This avoids
+// the separate Storage upload request that is currently failing at the network layer.
 const uploadDashboardImage = async (dataUrl: string | undefined, folder: 'members' | 'users'): Promise<string> => {
   if (!dataUrl) return '';
-  if (!/^data:image\/(jpeg|png|webp);base64,/.test(dataUrl)) {
+  if (!/^data:image\\/(jpeg|png|webp);base64,/.test(dataUrl)) {
     throw new Error('صيغة الصورة غير مدعومة. استخدم JPG أو PNG أو WEBP.');
   }
-
-  // Member photos live inside dashboard_state JSON. User photos are stored in
-  // Supabase Storage so the dashboard_users.photo_url column only holds a short URL.
-  if (folder === 'members') {
-    const estimatedBytes = Math.floor((dataUrl.length - dataUrl.indexOf(',') - 1) * 3 / 4);
-    if (estimatedBytes > 220 * 1024) throw new Error('حجم صورة المدرس كبير بعد الضغط. اختر صورة أصغر.');
-    return dataUrl;
+  const estimatedBytes = Math.floor((dataUrl.length - dataUrl.indexOf(',') - 1) * 3 / 4);
+  const maxBytes = folder === 'members' ? 220 * 1024 : 700 * 1024;
+  if (estimatedBytes > maxBytes) {
+    throw new Error(folder === 'users'
+      ? 'حجم صورة المستخدم كبير بعد الضغط. اختر صورة أصغر من 700KB.'
+      : 'حجم صورة المدرس كبير بعد الضغط. اختر صورة أصغر.');
   }
-
-  const response = await apiRequest('image-upload', { dataUrl, folder: 'users' });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok || !result.publicUrl) {
-    throw new Error(result.error || `فشل رفع صورة المستخدم (HTTP ${response.status}).`);
-  }
-  return result.publicUrl;
+  return dataUrl;
 };
 
 const cleanMeetingTitle = (title: string) => title.replace(/\s*\(فحص الشاشات والتسجيل\)/g, '').trim();
