@@ -260,6 +260,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const saveFailedRef = useRef<boolean>(false);
   const lastLocalEditAtRef = useRef<number>(0);
   const refreshInProgressRef = useRef<boolean>(false);
+  const meetingSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Keep an immediately updated snapshot so rapid keystrokes never build
   // successive edits from a stale React render.
@@ -452,7 +453,16 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Update the ref synchronously before React schedules the next render.
     membersRef.current = updatedMembers;
     setMembers(updatedMembers);
-    void pushToServer(updatedMembers);
+    // Keep the newest draft locally and debounce remote writes while the user types.
+    // This prevents a request for every single keystroke and avoids stale snapshots
+    // racing through the shared dashboard state.
+    lastLocalEditAtRef.current = Date.now();
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedMembers)); } catch { /* local draft remains in React state */ }
+    if (meetingSaveTimerRef.current) clearTimeout(meetingSaveTimerRef.current);
+    meetingSaveTimerRef.current = setTimeout(() => {
+      meetingSaveTimerRef.current = null;
+      void pushToServer(membersRef.current);
+    }, 700);
   };
 
   // Member Management
