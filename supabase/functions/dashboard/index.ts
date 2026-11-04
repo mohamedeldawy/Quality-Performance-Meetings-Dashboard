@@ -294,7 +294,13 @@ Deno.serve(async (req: Request) => {
     return json({ success: false, error: "طلب غير معروف" }, 404);
   } catch (error) {
     const status = Number((error as any)?.status || 500);
-    if (status >= 500) console.error("[dashboard]", error);
-    return json({ success: false, error: status === 500 ? "حدث خطأ في الخدمة. حاول مرة أخرى." : (error as Error).message }, status);
+    const message = error instanceof Error ? error.message : String(error);
+    if (status >= 500) console.error(`[dashboard:${action || "unknown"}]`, message);
+    // Return a useful, action-scoped error for user profile saves so the UI
+    // can show the actual database constraint/column issue instead of a generic 500.
+    const safeError = action === "users-save" && status >= 500
+      ? `فشل حفظ بيانات المستخدم: ${message.slice(0, 260)}`
+      : status === 500 ? "حدث خطأ في الخدمة. حاول مرة أخرى." : message;
+    return json({ success: false, error: safeError }, status);
   }
 });
