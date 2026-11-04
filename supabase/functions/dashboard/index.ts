@@ -260,17 +260,27 @@ Deno.serve(async (req: Request) => {
       const id = String(u.id || `user-${crypto.randomUUID()}`);
       const existing = await db("dashboard_users", `select=id&id=eq.${encodeURIComponent(id)}&limit=1`);
       const payload: any = {
-        id, username: String(u.username).trim(), name: String(u.name).trim(),
+        username: String(u.username).trim(), name: String(u.name).trim(),
         role: String(u.role || "Quality Engineer"), color: String(u.color || "bg-indigo-600"),
         photo_url: u.photoUrl || null, updated_at: new Date().toISOString(),
       };
       if (u.password) payload.password_hash = await passwordHash(String(u.password));
-      if (!existing?.length && !payload.password_hash) return json({ success: false, error: "كلمة المرور مطلوبة للمستخدم الجديد" }, 400);
-      await db("dashboard_users", "on_conflict=id", {
-        method: "POST",
-        headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
-        body: JSON.stringify([payload]),
-      });
+      if (existing?.length) {
+        // Update the existing row only. Do not run an UPSERT that attempts an
+        // INSERT with a missing NOT NULL password_hash.
+        await db("dashboard_users", `id=eq.${encodeURIComponent(id)}`, {
+          method: "PATCH",
+          headers: { Prefer: "return=minimal" },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        if (!payload.password_hash) return json({ success: false, error: "كلمة المرور مطلوبة للمستخدم الجديد" }, 400);
+        await db("dashboard_users", "", {
+          method: "POST",
+          headers: { Prefer: "return=minimal" },
+          body: JSON.stringify([{ id, ...payload }]),
+        });
+      }
       return json({ success: true, users: (await db("dashboard_users", "select=id,username,name,role,color,photo_url&order=created_at.asc")).map(toPublicUser) });
     }
     if (action === "users-delete") {
