@@ -69,7 +69,7 @@ const DashboardContent: React.FC = () => {
             <div className="flex items-center gap-2">
               {/* Requested exact title */}
               <h1 className="font-black text-sm sm:text-base text-white tracking-tight flex items-center gap-2">
-                <span>Quality Performance Meetings Dashboard</span>
+                <span>Elkheta Quality Performance Meetings Dashboard</span>
                 <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-bold text-amber-100 bg-white/10 border border-amber-300/40 px-2 py-0.5 rounded-full">
                   <Sparkles className="w-2.5 h-2.5 text-amber-300" />
                   <span>v2.0 Active</span>
