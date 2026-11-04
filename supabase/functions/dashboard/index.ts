@@ -208,6 +208,7 @@ Deno.serve(async (req: Request) => {
     }
     if (action === "image-upload") {
       const user = await requireUser(req);
+      try {
       const dataUrl = String(body.dataUrl || "");
       const folder = body.folder === "users" ? "users" : "members";
       const match = dataUrl.match(/^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/);
@@ -238,7 +239,15 @@ Deno.serve(async (req: Request) => {
         body: bytes,
       });
       if (!upload.ok) throw new Error(`فشل رفع الصورة إلى Storage (${upload.status}): ${(await upload.text()).slice(0, 180)}`);
-      return json({ success: true, publicUrl: `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${objectPath}`, uploadedBy: user.id });
+      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${objectPath}`;
+      const verify = await fetch(publicUrl, { method: "HEAD" });
+      if (!verify.ok) throw new Error(`تم رفع الملف لكن تعذر التحقق من رابط الصورة (${verify.status}).`);
+      return json({ success: true, publicUrl, uploadedBy: user.id });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "تعذر رفع الصورة";
+        console.error("[image-upload]", message);
+        return json({ success: false, error: message }, 502);
+      }
     }
     const user = await requireUser(req);
     if (action === "dashboard-read") return json({ success: true, data: await readDashboard() });
