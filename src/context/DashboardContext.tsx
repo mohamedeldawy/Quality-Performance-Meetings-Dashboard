@@ -74,6 +74,7 @@ interface DashboardContextType {
 const STORAGE_KEY = 'quality_team_meeting_dashboard_v6';
 const USERS_STORAGE_KEY = 'quality_team_users_v3';
 const AUTH_SESSION_KEY = 'quality_team_auth_session_v2';
+const ACTIVE_MEMBER_KEY = 'quality_dashboard_active_member_v1';
 
 const normalizeDepartmentActions = (value: unknown): DepartmentActionItem[] => {
   if (!Array.isArray(value)) return [];
@@ -219,15 +220,22 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
   });
 
-  const [activeMemberId, setActiveMemberId] = useState<string>(() => {
-    return members[0]?.id || 'm1';
+  const [activeMemberId, setActiveMemberIdState] = useState<string>(() => {
+    const savedId = localStorage.getItem(ACTIVE_MEMBER_KEY);
+    return savedId && members.some((member) => member.id === savedId) ? savedId : (members[0]?.id || 'm1');
   });
+  const setActiveMemberId = (id: string) => {
+    setActiveMemberIdState(id);
+    try { localStorage.setItem(ACTIVE_MEMBER_KEY, id); } catch { /* local preference only */ }
+  };
 
   const [syncStatus, setSyncStatus] = useState<'synced' | 'saving' | 'syncing' | 'offline'>('synced');
   const [lastUpdatedBy, setLastUpdatedBy] = useState<string>('النظام');
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string>('الآن');
   const versionRef = useRef<number>(1);
   const isSavingRef = useRef<boolean>(false);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const pendingLocalWritesRef = useRef<number>(0);
 
   // Active member and active meeting (bulletproof against undefined)
   const activeMember: QualityMemberReview =
@@ -290,7 +298,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         if (json.success && json.data) {
           const remoteData: DashboardSyncData = json.data;
 
-          if (remoteData.version >= versionRef.current && !isSavingRef.current) {
+          if (remoteData.version > versionRef.current && !isSavingRef.current && pendingLocalWritesRef.current === 0) {
             versionRef.current = remoteData.version;
             if (Array.isArray(remoteData.members)) {
               setMembers(remoteData.members.map(normalizeMemberProfile));
@@ -298,7 +306,7 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             if (Array.isArray(remoteData.users)) {
               setUsers(remoteData.users);
             }
-            setActiveMemberId(remoteData.activeMemberId || remoteData.members[0]?.id || '');
+            // Active member is a per-browser choice, not shared dashboard data.
             setLastUpdatedBy(remoteData.lastUpdatedBy);
             setLastUpdatedAt(remoteData.lastUpdatedAt);
           }
@@ -311,29 +319,30 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   // Push updates to server
-  const pushToServer = async (newMembers: QualityMemberReview[], newActiveId?: string) => {
+  const pushToServer = (newMembers: QualityMemberReview[], newActiveId?: string) => {
+    pendingLocalWritesRef.current += 1;
     isSavingRef.current = true;
     setSyncStatus('saving');
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newMembers));
-      const res = await apiRequest('dashboard-write', { members: newMembers, activeMemberId: newActiveId ?? activeMemberId });
-
-      if (res.ok) {
-        const json = await res.json();
-        if (json.version) {
-          versionRef.current = json.version;
-          setLastUpdatedBy(json.lastUpdatedBy);
-          setLastUpdatedAt(json.lastUpdatedAt);
-        }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(newMembers)); } catch { /* server remains source of truth */ }
+    const saveTask = async () => {
+      try {
+        const res = await apiRequest('dashboard-write', { members: newMembers, activeMemberId: newActiveId ?? activeMemberId });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `فشل حفظ البيانات (${res.status})`);
+        if (data.version) versionRef.current = data.version;
+        setLastUpdatedBy(data.lastUpdatedBy || currentUser?.name || 'النظام');
+        setLastUpdatedAt(data.lastUpdatedAt || 'الآن');
         setSyncStatus('synced');
-      } else {
+      } catch (error) {
+        console.error('Dashboard save failed:', error);
         setSyncStatus('offline');
+      } finally {
+        pendingLocalWritesRef.current = Math.max(0, pendingLocalWritesRef.current - 1);
+        isSavingRef.current = pendingLocalWritesRef.current > 0;
       }
-    } catch {
-      setSyncStatus('offline');
-    } finally {
-      isSavingRef.current = false;
-    }
+    };
+    saveQueueRef.current = saveQueueRef.current.then(saveTask, saveTask);
+    return saveQueueRef.current;
   };
 
   // Restore the authenticated session from this tab's session token.
@@ -435,14 +444,14 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const updated = [...members, newMember];
     setMembers(updated);
     setActiveMemberId(newMember.id);
-    pushToServer(updated, newMember.id);
+    await pushToServer(updated, newMember.id);
   };
 
   const updateMember = async (id: string, updates: Partial<QualityMemberReview>) => {
     const savedUpdates = updates.photoUrl?.startsWith('data:image/') ? { ...updates, photoUrl: await uploadDashboardImage(updates.photoUrl, 'members') } : updates;
     const updated = members.map((member) => (member.id === id ? { ...member, ...savedUpdates } : member));
     setMembers(updated);
-    pushToServer(updated);
+    await pushToServer(updated);
   };
 
   const updateMemberSeniority = (id: string, seniority: SeniorityTier) => {
