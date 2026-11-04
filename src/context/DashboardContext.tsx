@@ -288,39 +288,42 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setUsers([]);
   };
 
-  // Fetch state from server
+  // Fetch the latest saved state. Manual refresh waits for queued writes first,
+  // then applies the server response even when its version matches this tab.
   const refreshFromServer = async () => {
+    setSyncStatus('syncing');
     try {
+      await saveQueueRef.current;
+      if (pendingLocalWritesRef.current > 0) {
+        await new Promise<void>((resolve) => {
+          const check = () => pendingLocalWritesRef.current === 0 ? resolve() : window.setTimeout(check, 100);
+          check();
+        });
+      }
       const res = await apiRequest('dashboard-read');
       if (res.status === 401) {
         clearAccessToken();
         setCurrentUser(null);
         setUsers([]);
         setSyncStatus('offline');
-        return;
+        throw new Error('انتهت جلسة الدخول. سجل الدخول مرة أخرى.');
       }
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && json.data) {
-          const remoteData: DashboardSyncData = json.data;
-
-          if (remoteData.version > versionRef.current && !isSavingRef.current && pendingLocalWritesRef.current === 0) {
-            versionRef.current = remoteData.version;
-            if (Array.isArray(remoteData.members)) {
-              setMembers(remoteData.members.map(normalizeMemberProfile));
-            }
-            if (Array.isArray(remoteData.users)) {
-              setUsers(remoteData.users);
-            }
-            // Active member is a per-browser choice, not shared dashboard data.
-            setLastUpdatedBy(remoteData.lastUpdatedBy);
-            setLastUpdatedAt(remoteData.lastUpdatedAt);
-          }
-          setSyncStatus('synced');
-        }
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success || !json.data) {
+        throw new Error(json.error || `تعذر تحديث البيانات من السيرفر (${res.status})`);
       }
-    } catch {
+      const remoteData: DashboardSyncData = json.data;
+      // A manual refresh is an explicit request to reload the server copy.
+      if (Array.isArray(remoteData.members)) setMembers(remoteData.members.map(normalizeMemberProfile));
+      if (Array.isArray(remoteData.users)) setUsers(remoteData.users);
+      versionRef.current = Number(remoteData.version || versionRef.current);
+      setLastUpdatedBy(remoteData.lastUpdatedBy || 'النظام');
+      setLastUpdatedAt(remoteData.lastUpdatedAt || 'الآن');
+      setSyncStatus('synced');
+    } catch (error) {
+      console.error('Dashboard refresh failed:', error);
       setSyncStatus('offline');
+      throw error;
     }
   };
 
