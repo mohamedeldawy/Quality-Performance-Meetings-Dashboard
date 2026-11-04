@@ -189,14 +189,8 @@ export const DashboardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
                 createdAt: mtg.createdAt || '2026-10-26',
                 duration: mtg.duration || { startDate: '2026-09-25', endDate: '2026-10-26', notes: '' },
                 totalTasksScreen: mtg.totalTasksScreen || { screenshotUrl: null },
-                overplannedNegotiation: {
-                  discussionNotes: mtg.overplannedNegotiation?.discussionNotes || '',
-                  actions: Array.isArray(mtg.overplannedNegotiation?.actions) ? mtg.overplannedNegotiation.actions : [],
-                },
-                ticketsScreen: {
-                  discussionNotes: mtg.ticketsScreen?.discussionNotes || '',
-                  actions: Array.isArray(mtg.ticketsScreen?.actions) ? mtg.ticketsScreen.actions : [],
-                },
+                overplannedNegotiation: { ...(mtg.overplannedNegotiation || {}), discussionNotes: mtg.overplannedNegotiation?.discussionNotes || '', actions: Array.isArray(mtg.overplannedNegotiation?.actions) ? mtg.overplannedNegotiation.actions : [], },
+                ticketsScreen: { ...(mtg.ticketsScreen || {}), discussionNotes: mtg.ticketsScreen?.discussionNotes || '', actions: Array.isArray(mtg.ticketsScreen?.actions) ? mtg.ticketsScreen.actions : [], },
                 meetingReport: {
                   ...(mtg.meetingReport || {}),
                   fileUrl: mtg.meetingReport?.fileUrl || null,
